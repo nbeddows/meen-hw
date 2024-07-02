@@ -171,40 +171,21 @@ namespace meen_hw::tests
 	}
 
 	TEST_F(MeenHwTest, SetOptions)
-	{	
-		EXPECT_THROW
-		(
-			// Invalid values
-			i8080ArcadeIO_->SetOptions("{\"bpp\":2}");
-			i8080ArcadeIO_->SetOptions("{\"colour\":\"black\" }");
-			i8080ArcadeIO_->SetOptions("{\"orientation\":\"up\"}");
-			// Invalid options
-			i8080ArcadeIO_->SetOptions("{\"invalid-option\":1}");
-			,
-			std::invalid_argument
-		);
-
-		EXPECT_NO_THROW
-		(
-			i8080ArcadeIO_->SetOptions("{\"bpp\":8,\"colour\":\"random\",\"orientation\":\"cocktail\"}");
-		);
+	{
+		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"bpp\":2}"), std::invalid_argument);
+		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"colour\":\"black\" }"), std::invalid_argument);
+		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"orientation\":\"up\"}"), std::invalid_argument);
+		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"invalid-option\":1}"), std::invalid_argument);
+		EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions("{\"bpp\":8,\"colour\":\"random\",\"orientation\":\"cocktail\"}"));
 	}
 
 	TEST_F(MeenHwTest, GetVRAMDimensions)
 	{
-		EXPECT_NO_THROW
-		(
-			i8080ArcadeIO_->SetOptions("{\"orientation\":\"cocktail\"}");
-		);
-
+		EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions("{\"orientation\":\"cocktail\"}"));
 		EXPECT_EQ(256, i8080ArcadeIO_->GetVRAMWidth());
 		EXPECT_EQ(224, i8080ArcadeIO_->GetVRAMHeight());
 
-		EXPECT_NO_THROW
-		(
-			i8080ArcadeIO_->SetOptions("{\"orientation\":\"upright\"}");
-		);
-
+		EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions("{\"orientation\":\"upright\"}"););
 		EXPECT_EQ(224, i8080ArcadeIO_->GetVRAMWidth());
 		EXPECT_EQ(256, i8080ArcadeIO_->GetVRAMHeight());
 	}
