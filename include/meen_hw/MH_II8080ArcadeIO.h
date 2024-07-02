@@ -174,7 +174,7 @@ namespace meen_hw
 
 			@return				The width of the dstVRAM passed to BlitVRAM. 
 		*/
-		virtual int GetVideoWidth() const = 0;
+		virtual int GetVRAMWidth() const = 0;
 
 		/** Output video height in pixels
 
@@ -184,7 +184,7 @@ namespace meen_hw
 
 			@return				The height of the dstVRAM passed to BlitVRAM.
 		*/
-		virtual int GetVideoHeight() const = 0;
+		virtual int GetVRAMHeight() const = 0;
 
 		virtual ~MH_II8080ArcadeIO() = default;
 	};
