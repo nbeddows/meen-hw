@@ -87,16 +87,16 @@ set (${lib_name}_source_files
     ${source_dir}/i8080_arcade/MH_I8080ArcadeIO.cpp
   )
 
-  SOURCE_GROUP(i8080_arcade/include FILES ${${lib_name}_i8080_arcade_include_files})
-  SOURCE_GROUP(i8080_arcade/source FILES ${${lib_name}_i8080_arcade_source_files})
+  SOURCE_GROUP(i8080_arcade/${include_dir} FILES ${${lib_name}_i8080_arcade_include_files})
+  SOURCE_GROUP(i8080_arcade/${source_dir} FILES ${${lib_name}_i8080_arcade_source_files})
 #endif()
 
 #if (NOT BUILD_TESTING STREQUAL OFF)
 #  add_subdirectory(Tests)
 #endif()
 
-SOURCE_GROUP(meen_hw/include FILES ${${lib_name}_include_files})
-SOURCE_GROUP(meen_hw/source FILES ${${lib_name}_source_files})
+SOURCE_GROUP(meen_hw/${include_dir} FILES ${${lib_name}_include_files})
+SOURCE_GROUP(meen_hw/${source_dir} FILES ${${lib_name}_source_files})
 
 add_library(${lib_name} ${lib_type}
   ${${lib_name}_include_files}
@@ -121,4 +121,9 @@ target_link_libraries(${lib_name} PRIVATE
   nlohmann_json::nlohmann_json
 )
 
-#install(FILES LICENSE.md DESTINATION licenses RENAME LICENSE)
+target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
+  ${${lib_name}_include_files}
+)
+
+install(TARGETS ${lib_name} FILE_SET HEADERS)
+install(FILES LICENSE DESTINATION licenses)
