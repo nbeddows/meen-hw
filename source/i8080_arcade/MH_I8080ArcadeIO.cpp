@@ -155,7 +155,7 @@ namespace meen_hw::i8080_arcade
 
 				auto begin = src;
 				auto end = begin + vramSize;
-				auto start = dst + rowBytes * (height_ - 1);
+				auto start = dst + rowBytes * (GetVRAMHeight() - 1);
 				auto ptr = start;
 
 				while (begin < end)
@@ -196,7 +196,7 @@ namespace meen_hw::i8080_arcade
 			}
 			case BlitFlags::Upright8bpp:
 			{
-				decompressVram(dst + rowBytes * (height_ - 1), false);
+				decompressVram(dst + rowBytes * (GetVRAMHeight() - 1), false);
 				break;
 			}
 			default:
@@ -218,14 +218,12 @@ namespace meen_hw::i8080_arcade
 				{
 					case 1:
 					{
-						// native bpp, don't set the 8bpp flag
-						// TODO: need to turn off BlitFlags::Rgb332
+						blitMode_ &= ~BlitFlags::Rgb332;
 						break;
 					}
 					case 8:
 					{
 						blitMode_ |= BlitFlags::Rgb332;
-						width_ = 256;
 						break;
 					}
 					default:
@@ -280,19 +278,12 @@ namespace meen_hw::i8080_arcade
 				if (orientation == "upright")
 				{
 					blitMode_ |= BlitFlags::Upright;
-
-					if (blitMode_ & BlitFlags::Rgb332)
-					{
-						width_ = 224;
-					}
-					else
-					{
-						width_ = 28;
-					}
-
-					height_ = 256;
 				}
-				else if (orientation != "cocktail")
+				else if (orientation == "cocktail")
+				{
+					blitMode_ &= ~BlitFlags::Upright;
+				}
+				else
 				{
 					throw std::invalid_argument("Invalid configuration: orientation");
 				}
@@ -306,11 +297,11 @@ namespace meen_hw::i8080_arcade
 
 	int MH_I8080ArcadeIO::GetVRAMWidth() const
 	{
-		return width_;
+		return blitMode_ & BlitFlags::Upright ? 224 : 256;
 	}
 
 	int MH_I8080ArcadeIO::GetVRAMHeight() const
 	{
-		return height_;
+		return blitMode_ & BlitFlags::Upright ? 256 : 224;
 	}
 } // namespace meen_hw::i8080_arcade
