@@ -31,7 +31,6 @@ namespace meen_hw::tests
 	protected:
 		static std::unique_ptr<MH_II8080ArcadeIO> i8080ArcadeIO_; 
 	public:
-
 		static void SetUpTestCase();
 	};
 
@@ -61,7 +60,7 @@ namespace meen_hw::tests
 		EXPECT_EQ(0x40, value);
 	}
 
-	TEST_F(MeenHwTest, WritePorts3And5)
+	TEST_F(MeenHwTest, WriteAudioPorts)
 	{
 		/*
 			Writing to ports 3 and 5 will write to the audio hardware.
@@ -120,6 +119,30 @@ namespace meen_hw::tests
 		value = i8080ArcadeIO_->WritePort(3, 0x00);
 		// We should get nothing back
 		EXPECT_EQ(0x00, value);
+	}
+
+	// This tests port 2 and 4 writes and port 3 reads (shifting register)
+	TEST_F(MeenHwTest, ShiftRegister)
+	{
+		// Write bytes 0xFF and 0x00 into port 4 to store the 16bit value 0x00FF
+
+		auto result = i8080ArcadeIO_->WritePort(4, 0xFF);
+		// Writing to port 2 should always return 0.
+		EXPECT_EQ(0x00, result);
+		result = i8080ArcadeIO_->WritePort(4, 0x00);
+		// Writing to port 2 should always return 0.
+		EXPECT_EQ(0x00, result);
+
+		// Bit shift from the high byte (0x00) to the low byte (0xFF)
+		for (int i = 0; i < 8; i++)
+		{
+			result = i8080ArcadeIO_->WritePort(2, i);
+			// Writing to port 2 should always return 0.
+			EXPECT_EQ(0x00, result);
+			// Shifting down the 16 bits should give 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F
+			result = i8080ArcadeIO_->ReadPort(3);
+			EXPECT_EQ((1 << i) - 1, result);
+		}
 	}
 #endif
 
