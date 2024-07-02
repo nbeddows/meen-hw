@@ -144,8 +144,8 @@ namespace meen_hw::tests
 		}
 	}
 
-	// Changes in the clock cycles betweens returning
-	// interrupts 1 and 2 with no changes returning no interrupt
+	// Changes in the clock cycles between returning
+	// interrupts 1 and 2 with no change returning no interrupt
 	TEST_F(MeenHwTest, GenerateInterrupt)
 	{
 		auto isr = i8080ArcadeIO_->GenerateInterrupt(8333333, 16666);
@@ -168,6 +168,26 @@ namespace meen_hw::tests
 
 		isr = i8080ArcadeIO_->GenerateInterrupt(50000000, 183333);
 		EXPECT_EQ(0, isr);
+	}
+
+	TEST_F(MeenHwTest, SetOptions)
+	{	
+		EXPECT_THROW
+		(
+			// Invalid values
+			i8080ArcadeIO_->SetOptions("{\"bpp\":2}");
+			i8080ArcadeIO_->SetOptions("{\"colour\":\"black\" }");
+			i8080ArcadeIO_->SetOptions("{\"orientation\":\"up\"}");
+			// Invalid options
+			i8080ArcadeIO_->SetOptions("{\"invalid-option\":1}");
+			,
+			std::invalid_argument
+		);
+
+		EXPECT_NO_THROW
+		(
+			i8080ArcadeIO_->SetOptions("{\"bpp\":8,\"colour\":\"random\",\"orientation\":\"cocktail\"}");
+		);
 	}
 #endif
 
