@@ -91,10 +91,6 @@ set (${lib_name}_source_files
   SOURCE_GROUP(i8080_arcade/${source_dir} FILES ${${lib_name}_i8080_arcade_source_files})
 #endif()
 
-#if (NOT BUILD_TESTING STREQUAL OFF)
-#  add_subdirectory(Tests)
-#endif()
-
 SOURCE_GROUP(meen_hw/${include_dir} FILES ${${lib_name}_include_files})
 SOURCE_GROUP(meen_hw/${source_dir} FILES ${${lib_name}_source_files})
 
@@ -120,6 +116,10 @@ set_target_properties(${lib_name} PROPERTIES VERSION ${CMAKE_PROJECT_VERSION} SO
 target_link_libraries(${lib_name} PRIVATE
   nlohmann_json::nlohmann_json
 )
+
+if (NOT BUILD_TESTING STREQUAL OFF)
+  add_subdirectory(tests/meen_hw_test)
+endif()
 
 target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
   ${${lib_name}_include_files}
