@@ -29,20 +29,28 @@ namespace meen_hw::tests
 	class MeenHwTest : public testing::Test
 	{
 	protected:
-
+		static std::unique_ptr<MH_II8080ArcadeIO> i8080ArcadeIO_; 
 	public:
 
 		static void SetUpTestCase();
 	};
 
+	std::unique_ptr<MH_II8080ArcadeIO> MeenHwTest::i8080ArcadeIO_;
+
 	void MeenHwTest::SetUpTestCase()
 	{
+		i8080ArcadeIO_ = MakeI8080ArcadeIO();
 
+#ifdef ENABLE_MH_I8080ARCADE
+		ASSERT_NE(nullptr, i8080ArcadeIO_);
+#else
+		ASSERT_EQ(nullptr, i8080ArcadeIO_);
+#endif
 	}
 
 	TEST_F(MeenHwTest, Version)
 	{
-		std::cout << "Version: " << meen_hw::Version() << std::endl;
+		EXPECT_NE(nullptr, Version());	
 	}
 } // namespace meen_hw::tests
 
