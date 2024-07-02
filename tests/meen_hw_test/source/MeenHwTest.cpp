@@ -189,6 +189,25 @@ namespace meen_hw::tests
 			i8080ArcadeIO_->SetOptions("{\"bpp\":8,\"colour\":\"random\",\"orientation\":\"cocktail\"}");
 		);
 	}
+
+	TEST_F(MeenHwTest, GetVRAMDimensions)
+	{
+		EXPECT_NO_THROW
+		(
+			i8080ArcadeIO_->SetOptions("{\"orientation\":\"cocktail\"}");
+		);
+
+		EXPECT_EQ(256, i8080ArcadeIO_->GetVRAMWidth());
+		EXPECT_EQ(224, i8080ArcadeIO_->GetVRAMHeight());
+
+		EXPECT_NO_THROW
+		(
+			i8080ArcadeIO_->SetOptions("{\"orientation\":\"upright\"}");
+		);
+
+		EXPECT_EQ(224, i8080ArcadeIO_->GetVRAMWidth());
+		EXPECT_EQ(256, i8080ArcadeIO_->GetVRAMHeight());
+	}
 #endif
 
 } // namespace meen_hw::tests
