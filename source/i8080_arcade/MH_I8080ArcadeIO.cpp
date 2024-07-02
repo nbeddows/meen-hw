@@ -210,93 +210,96 @@ namespace meen_hw::i8080_arcade
 	{
 		auto options = nlohmann::json::parse(jsonOptions);
 
-		if (options.contains("bpp") == true)
+		for (const auto& [key, val] : options.items())
 		{
-			auto bpp = options["bpp"].get<uint8_t>();
-
-			switch (bpp)
+			if (key == "bpp")
 			{
-				case 1:
+				switch (val.get<uint8_t>())
 				{
-					// native bpp, don't set the 8bpp flag
-					// TODO: need to turn off BlitFlags::Rgb332
-					break;
-				}
-				case 8:
-				{
-					blitMode_ |= BlitFlags::Rgb332;
-					width_ = 256;
-					break;
-				}
-				default:
-				{
-					throw std::invalid_argument("Invalid configuration: bpp");
+					case 1:
+					{
+						// native bpp, don't set the 8bpp flag
+						// TODO: need to turn off BlitFlags::Rgb332
+						break;
+					}
+					case 8:
+					{
+						blitMode_ |= BlitFlags::Rgb332;
+						width_ = 256;
+						break;
+					}
+					default:
+					{
+						throw std::invalid_argument("Invalid configuration: bpp");
+					}
 				}
 			}
-		}
-
-		if (options.contains("colour") == true)
-		{
-			auto colour = options["colour"].get<std::string_view>();
-			auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
-
-			if (errc != std::errc())
+			else if (key == "colour")
 			{
-				if (colour == "red")
+				auto colour = val.get<std::string_view>();
+				auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
+
+				if (errc != std::errc())
 				{
-					colour_ = 0x80;
+					if (colour == "red")
+					{
+						colour_ = 0x80;
+					}
+					else if (colour == "green")
+					{
+						colour_ = 0x14;
+					}
+					else if (colour == "blue")
+					{
+						colour_ = 0x07;
+					}
+					else if (colour == "white")
+					{
+						colour_ = 0xFF;
+					}
+					else if (colour == "random")
+					{
+						srand(time(nullptr));
+						colour_ = rand() % 255;
+					}
+					else
+					{
+						throw std::invalid_argument("Invalid configuration: colour");
+					}
 				}
-				else if (colour == "green")
+				else if (*ptr != '\0')
 				{
-					colour_ = 0x14;
-				}
-				else if (colour == "blue")
-				{
-					colour_ = 0x07;
-				}
-				else if (colour == "white")
-				{
-					colour_ = 0xFF;
-				}
-				else if (colour == "random")
-				{
-					srand(time(nullptr));
-					colour_ = rand() % 255;
-				}
-				else
-				{
+					// we parsed something but there is still left over text
 					throw std::invalid_argument("Invalid configuration: colour");
 				}
 			}
-			else if (*ptr != '\0')
+			else if(key == "orientation")
 			{
-				// we parsed something but there is still left over text
-				throw std::invalid_argument("Invalid configuration: colour");
-			}
-		}
+				auto orientation = val.get<std::string>();
 
-		if (options.contains("orientation") == true)
-		{
-			auto orientation = options["orientation"].get<std::string>();
-
-			if (orientation == "upright")
-			{
-				blitMode_ |= BlitFlags::Upright;
-
-				if (blitMode_ & BlitFlags::Rgb332)
+				if (orientation == "upright")
 				{
-					width_ = 224;
-				}
-				else
-				{
-					width_ = 28;
-				}
+					blitMode_ |= BlitFlags::Upright;
 
-				height_ = 256;
+					if (blitMode_ & BlitFlags::Rgb332)
+					{
+						width_ = 224;
+					}
+					else
+					{
+						width_ = 28;
+					}
+
+					height_ = 256;
+				}
+				else if (orientation != "cocktail")
+				{
+					throw std::invalid_argument("Invalid configuration: orientation");
+				}
 			}
-			else if (orientation != "cocktail")
+			else
 			{
-				throw std::invalid_argument("Invalid configuration: orientation");
+				throw std::invalid_argument("Invalid configuration option");
 			}
 		}
 	}
