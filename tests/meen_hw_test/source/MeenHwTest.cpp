@@ -39,7 +39,6 @@ namespace meen_hw::tests
 	void MeenHwTest::SetUpTestCase()
 	{
 		i8080ArcadeIO_ = MakeI8080ArcadeIO();
-
 #ifdef ENABLE_MH_I8080ARCADE
 		ASSERT_NE(nullptr, i8080ArcadeIO_);
 #else
@@ -143,6 +142,32 @@ namespace meen_hw::tests
 			result = i8080ArcadeIO_->ReadPort(3);
 			EXPECT_EQ((1 << i) - 1, result);
 		}
+	}
+
+	// Changes in the clock cycles betweens returning
+	// interrupts 1 and 2 with no changes returning no interrupt
+	TEST_F(MeenHwTest, GenerateInterrupt)
+	{
+		auto isr = i8080ArcadeIO_->GenerateInterrupt(8333333, 16666);
+		EXPECT_EQ(1, isr);
+
+		isr = i8080ArcadeIO_->GenerateInterrupt(16666666, 33333);
+		EXPECT_EQ(2, isr);
+
+		isr = i8080ArcadeIO_->GenerateInterrupt(25000000, 50000);
+		EXPECT_EQ(1, isr);
+
+		isr = i8080ArcadeIO_->GenerateInterrupt(33333333, 66666);
+		EXPECT_EQ(2, isr);
+
+		isr = i8080ArcadeIO_->GenerateInterrupt(33333333, 74999);
+		EXPECT_EQ(0, isr);
+
+		isr = i8080ArcadeIO_->GenerateInterrupt(50000000, 100000);
+		EXPECT_EQ(1, isr);
+
+		isr = i8080ArcadeIO_->GenerateInterrupt(50000000, 183333);
+		EXPECT_EQ(0, isr);
 	}
 #endif
 
