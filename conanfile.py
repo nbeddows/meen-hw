@@ -18,8 +18,8 @@ class MeenHwRecipe(ConanFile):
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False], "with_python": [True, False]}
-    default_options = {"gtest*:build_gmock": False, "shared": True, "fPIC": True, "with_python": False}
+    options = {"shared": [True, False], "fPIC": [True, False], "with_i8080_arcade": [True, False], "with_python": [True, False]}
+    default_options = {"gtest*:build_gmock": False, "shared": True, "fPIC": True, "with_i8080_arcade": False, "with_python": False}
 
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
@@ -53,6 +53,7 @@ class MeenHwRecipe(ConanFile):
         deps.generate()
         tc = CMakeToolchain(self)
         tc.cache_variables["enable_python_module"] = self.options.with_python
+        tc.cache_variables["enable_i8080_arcade"] = self.options.with_i8080_arcade
         tc.variables["build_arch"] = self.settings.arch
         tc.variables["archive_dir"] = self.cpp_info.libdirs[0]
         tc.variables["runtime_dir"] = self.cpp_info.bindirs[0]

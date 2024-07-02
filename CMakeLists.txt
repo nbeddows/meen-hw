@@ -59,13 +59,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${artifacts_dir}/${runtime_dir})
 
 find_package(nlohmann_json REQUIRED)
 
-#if(enablePythonModule STREQUAL ON)
+#if(enable_python_module STREQUAL ON)
 #    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 #    find_package(pybind11 REQUIRED)
-#endif()
-
-#if (NOT BUILD_TESTING STREQUAL OFF)
-#  find_package(GTest REQUIRED)
 #endif()
 
 set (${lib_name}_include_files
@@ -78,7 +74,7 @@ set (${lib_name}_source_files
 	${source_dir}/MH_Factory.cpp
 )
 
-#if(enableI8080Arcade STREQUAL ON)
+if(enable_i8080_arcade STREQUAL ON)
   set (${lib_name}_i8080_arcade_include_files
     ${include_dir}/${lib_name}/i8080_arcade/MH_I8080ArcadeIO.h
   )
@@ -89,7 +85,7 @@ set (${lib_name}_source_files
 
   SOURCE_GROUP(i8080_arcade/${include_dir} FILES ${${lib_name}_i8080_arcade_include_files})
   SOURCE_GROUP(i8080_arcade/${source_dir} FILES ${${lib_name}_i8080_arcade_source_files})
-#endif()
+endif()
 
 SOURCE_GROUP(meen_hw/${include_dir} FILES ${${lib_name}_include_files})
 SOURCE_GROUP(meen_hw/${source_dir} FILES ${${lib_name}_source_files})
@@ -106,6 +102,12 @@ string(TOUPPER ${lib_name} lib_name_toupper)
 target_compile_definitions(${lib_name} PRIVATE
   ${lib_name_toupper}_VERSION=\"${CMAKE_PROJECT_VERSION}\"
 )
+
+if(enable_i8080_arcade STREQUAL ON)
+  target_compile_definitions(${lib_name} PRIVATE
+    ENABLE_MH_I8080ARCADE
+  )
+endif()
 
 target_include_directories(${lib_name} PRIVATE
   ${CMAKE_SOURCE_DIR}/${include_dir}

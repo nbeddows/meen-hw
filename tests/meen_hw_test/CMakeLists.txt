@@ -30,6 +30,12 @@ SOURCE_GROUP("Source" FILES ${${exe_name}_source_files})
 
 add_executable(${exe_name} ${${exe_name}_source_files})
 
+if(enable_i8080_arcade STREQUAL ON)
+  target_compile_definitions(${exe_name} PRIVATE
+    ENABLE_MH_I8080ARCADE
+  )
+endif()
+
 target_link_libraries(${exe_name} PRIVATE
   GTest::GTest
   ${lib_name}
