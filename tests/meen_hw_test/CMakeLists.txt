@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set(exe_name MeenHwTest)
+set(exe_name meen_hw_test)
 
 find_package(GTest REQUIRED)
 
