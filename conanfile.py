@@ -3,11 +3,11 @@ from conan.tools.cmake import CMakeToolchain, CMake, cmake_layout, CMakeDeps
 from conan.tools.build import can_run
 import os
 
-class MachEmuRecipe(ConanFile):
+class MeenHwRecipe(ConanFile):
     name = "meen_hw"
     version = "0.1.0"
     package_type = "library"
-    test_package_folder = "Tests/ConanPackageTest"
+    test_package_folder = "tests/conan_package_test"
 
     # Optional metadata
     license = "MIT"
@@ -23,12 +23,12 @@ class MachEmuRecipe(ConanFile):
 
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
-        "CMakeLists.txt",\
-        "LICENSE.md",\
+        "LICENSE",\
         "include/*",\
         "source/*"
 
     def requirements(self):
+        self.requires("nlohmann_json/3.11.3")
         if self.options.with_python:
             self.requires("pybind11/2.12.0")
 

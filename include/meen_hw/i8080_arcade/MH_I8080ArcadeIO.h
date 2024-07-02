@@ -174,15 +174,15 @@ namespace meen_hw::i8080_arcade
 
 		/** Output video width
 
-			@see MH_II8080ArcadeIO::GetVideoWidth
+			@see MH_II8080ArcadeIO::GetVRAMWidth
 		*/
-		int GetVideoWidth() const final;
+		int GetVRAMWidth() const final;
 
 		/** Output video height
 
-			@see MH_II8080ArcadeIO::GetVideoHeight
+			@see MH_II8080ArcadeIO::GetVRAMHeight
 		*/
-		int GetVideoHeight() const final;
+		int GetVRAMHeight() const final;
 	};
 } // namespace meen_hw::i8080_arcade
 

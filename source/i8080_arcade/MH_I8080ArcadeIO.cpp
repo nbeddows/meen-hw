@@ -300,4 +300,14 @@ namespace meen_hw::i8080_arcade
 			}
 		}
 	}
+
+	int MH_I8080ArcadeIO::GetVRAMWidth() const
+	{
+		return width_;
+	}
+
+	int MH_I8080ArcadeIO::GetVRAMHeight() const
+	{
+		return height_;
+	}
 } // namespace meen_hw::i8080_arcade
