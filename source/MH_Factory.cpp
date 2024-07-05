@@ -22,8 +22,8 @@ SOFTWARE.
 
 #include "meen_hw/MH_Factory.h"
 
-#ifdef ENABLE_I8080ARCADE
-	#include "meen_hw/MH_I8080ArcadeIO.h"
+#ifdef ENABLE_MH_I8080ARCADE
+	#include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
 #endif
 
 namespace meen_hw
@@ -35,8 +35,8 @@ namespace meen_hw
 
 	std::unique_ptr<MH_II8080ArcadeIO> MakeI8080ArcadeIO()
 	{
-#ifdef ENABLE_I8080ARCADE
-		return std::make_unique<MH_I8080ArcadeIO>();
+#ifdef ENABLE_MH_I8080ARCADE
+		return std::make_unique<i8080_arcade::MH_I8080ArcadeIO>();
 #else
 		return nullptr;
 #endif

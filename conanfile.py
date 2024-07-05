@@ -18,14 +18,15 @@ class MeenHwRecipe(ConanFile):
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False], "with_python": [True, False]}
-    default_options = {"gtest*:build_gmock": False, "shared": True, "fPIC": True, "with_python": False}
+    options = {"shared": [True, False], "fPIC": [True, False], "with_i8080_arcade": [True, False], "with_python": [True, False]}
+    default_options = {"gtest*:build_gmock": False, "shared": True, "fPIC": True, "with_i8080_arcade": False, "with_python": False}
 
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
         "LICENSE",\
         "include/*",\
-        "source/*"
+        "source/*",\
+        "tests/meen_hw_test/*"
 
     def requirements(self):
         self.requires("nlohmann_json/3.11.3")
@@ -51,10 +52,11 @@ class MeenHwRecipe(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        tc.cache_variables["enablePythonModule"] = self.options.with_python
-        tc.variables["buildArch"] = self.settings.arch
-        tc.variables["archiveDir"] = self.cpp_info.libdirs[0]
-        tc.variables["runtimeDir"] = self.cpp_info.bindirs[0]
+        tc.cache_variables["enable_python_module"] = self.options.with_python
+        tc.cache_variables["enable_i8080_arcade"] = self.options.with_i8080_arcade
+        tc.variables["build_arch"] = self.settings.arch
+        tc.variables["archive_dir"] = self.cpp_info.libdirs[0]
+        tc.variables["runtime_dir"] = self.cpp_info.bindirs[0]
         tc.generate()
 
     def build(self):
@@ -62,9 +64,9 @@ class MeenHwRecipe(ConanFile):
         cmake.configure()
         cmake.build()
 
-        #if can_run(self) and not self.conf.get("tools.build:skip_test", default=False):
-        #    testsDir = os.path.join(self.source_folder, "artifacts", str(self.settings.build_type), str(self.settings.arch), self.cpp_info.bindirs[0])
-        #    self.run(os.path.join(testsDir, "MeenHwTest "))
+        if can_run(self) and not self.conf.get("tools.build:skip_test", default=False):
+            testsDir = os.path.join(self.source_folder, "artifacts", str(self.settings.build_type), str(self.settings.arch), self.cpp_info.bindirs[0])
+            self.run(os.path.join(testsDir, "MeenHwTest "))
         #    if self.options.with_python:
         #        cmd = os.path.join(self.source_folder, "tests/meen_hw/source/test_MeenHw.py -v ")
         #        self.run("python " + cmd)

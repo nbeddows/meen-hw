@@ -127,13 +127,12 @@ namespace meen_hw
                     }
                     else
                     {
-                        printf("Failed to acquire frame mutex\n");
+                        assert(resourceMutex != nullptr);
                         resourcePool->emplace_back(std::unique_ptr<T>{resource});
                     }
                 }
                 else
                 {
-                    printf("Failed to get the frame pool shared_ptr, deleting the video frame to prevent a memory leak\n");
                     std::default_delete<T>{}(resource);
                 }
             }
@@ -160,6 +159,9 @@ namespace meen_hw
         */
         explicit MH_ResourcePool(int resourcePoolSize = 1)
         {
+            resourceMutex_ = std::make_shared<std::mutex>();
+            resourcePool_ = std::make_shared<std::list<std::unique_ptr<T>>>();
+
             for (int i = 0; i < resourcePoolSize; i++)
             {
                 resourcePool_->emplace_back(std::make_unique<T>());

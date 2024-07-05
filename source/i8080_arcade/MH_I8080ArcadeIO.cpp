@@ -119,15 +119,14 @@ namespace meen_hw::i8080_arcade
 		return isr;
 	}
 
-	void MH_I8080ArcadeIO::BlitVRAM(uint8_t* dst, uint8_t rowBytes, uint8_t* src)
+	void MH_I8080ArcadeIO::BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src)
 	{
-		constexpr int vramWidth = 256;
-		constexpr int vramSize = 7168;
+		assert(dst.size() >= src.size());
 
 		auto decompressVram = [src, dst, rb = rowBytes, colour = colour_](uint8_t* nextCol, bool cocktail)
 		{
-			auto vramStart = src;
-			auto vramEnd = vramStart + vramSize;
+			auto vramStart = src.begin();
+			auto vramEnd = src.end();
 			int8_t shift = 0;
 			auto ptr = nextCol;
 
@@ -139,8 +138,20 @@ namespace meen_hw::i8080_arcade
 				shift = ++shift & 0x07;
 				//Move to the next vram byte if we have done a full cycle.
 				vramStart += shift == 0;
-				//If we are not at the end, move to the next row, otherwise move to the next column.
-				cocktail == true || ptr - rb < dst ? ptr = ++nextCol : ptr -= rb;
+			
+				if(cocktail == true)
+				{
+					if (++ptr - nextCol >= 256)
+					{
+						nextCol += rb;
+						ptr = nextCol;
+					}
+				}
+				else
+				{
+					//If we are not at the first row, move to the previous row, otherwise move to the next column.
+					ptr - rb < dst.data() ? ptr = ++nextCol : ptr -= rb;
+				}
 			}
 		};
 
@@ -148,14 +159,14 @@ namespace meen_hw::i8080_arcade
 		{
 			case BlitFlags::Upright:
 			{
-				static constexpr int srcWidth = vramWidth;
-				static constexpr int srcWidthMinus1 = vramWidth - 1;
+				static constexpr int srcWidth = 32;
+				static constexpr int srcWidthMinus1 = srcWidth - 1;
 				// Need to skip an additional 7 rows once the vertical sampling is complete.
 				static constexpr int srcRowSkip = srcWidth * 7;
 
-				auto begin = src;
-				auto end = begin + vramSize;
-				auto start = dst + rowBytes * (height_ - 1);
+				auto begin = src.begin();
+				auto end = src.end();
+				auto start = dst.begin() + rowBytes * (256 - 1);
 				auto ptr = start;
 
 				while (begin < end)
@@ -164,7 +175,7 @@ namespace meen_hw::i8080_arcade
 					{
 						uint8_t byte = 0;
 
-						// transpose the compressed pixels (sample from 8 pixels vertically)
+						// Transpose the compressed pixels (sample from 8 pixels vertically)
 						for (int j = 0; j < 8; j++)
 						{
 							byte |= (((begin[j * srcWidth] >> i) & 0x01) << j);
@@ -173,30 +184,46 @@ namespace meen_hw::i8080_arcade
 						*ptr = byte;
 
 						// Move to the previous row, else the next column
-						ptr - rowBytes >= dst ? ptr -= rowBytes : ptr = ++start;
+						ptr - rowBytes >= dst.begin() ? ptr -= rowBytes : ptr = ++start;
 					}
 
 					begin++;
 
 					// Since we sample 8 vertical pixels we need to skip another 7 rows when we get to the end of the current row.
 					// TODO: mem pool frames need to be 32 bit aligned, then we don't have to subtract src, ie; just for (begin & (width_ - 1)) == 0
-					begin += (((begin - src & srcWidthMinus1) == 0) * srcRowSkip);
+					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);				
 				}
 				break;
 			}
 			case BlitFlags::Native:
 			{
-				memcpy(dst, src, vramSize);
+				if(rowBytes == 32)
+				{
+					std::copy(src.begin(), src.end(), dst.begin());
+				}
+				else
+				{
+					auto d = dst.begin();;
+					auto s = src.begin();
+
+					// copy out each scanline
+					while(s < src.end())
+					{
+						std::copy_n(s, 32, d);
+						d += rowBytes;
+						s += 32;
+					}
+				}
 				break;
 			}
 			case BlitFlags::Rgb332:
 			{
-				decompressVram(dst, true);
+				decompressVram(dst.data(), true);
 				break;
 			}
 			case BlitFlags::Upright8bpp:
 			{
-				decompressVram(dst + rowBytes * (height_ - 1), false);
+				decompressVram(dst.data() + rowBytes * (256 - 1), false);
 				break;
 			}
 			default:
@@ -210,104 +237,98 @@ namespace meen_hw::i8080_arcade
 	{
 		auto options = nlohmann::json::parse(jsonOptions);
 
-		if (options.contains("bpp") == true)
+		for (const auto& [key, val] : options.items())
 		{
-			auto bpp = options["bpp"].get<uint8_t>();
-
-			switch (bpp)
+			if (key == "bpp")
 			{
-				case 1:
+				switch (val.get<uint8_t>())
 				{
-					// native bpp, don't set the 8bpp flag
-					// TODO: need to turn off BlitFlags::Rgb332
-					break;
-				}
-				case 8:
-				{
-					blitMode_ |= BlitFlags::Rgb332;
-					width_ = 256;
-					break;
-				}
-				default:
-				{
-					throw std::invalid_argument("Invalid configuration: bpp");
+					case 1:
+					{
+						blitMode_ &= ~BlitFlags::Rgb332;
+						break;
+					}
+					case 8:
+					{
+						blitMode_ |= BlitFlags::Rgb332;
+						break;
+					}
+					default:
+					{
+						throw std::invalid_argument("Invalid configuration: bpp");
+					}
 				}
 			}
-		}
-
-		if (options.contains("colour") == true)
-		{
-			auto colour = options["colour"].get<std::string_view>();
-			auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
-
-			if (errc != std::errc())
+			else if (key == "colour")
 			{
-				if (colour == "red")
+				auto colour = val.get<std::string_view>();
+				auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
+
+				if (errc != std::errc())
 				{
-					colour_ = 0x80;
+					if (colour == "red")
+					{
+						colour_ = 0x80;
+					}
+					else if (colour == "green")
+					{
+						colour_ = 0x14;
+					}
+					else if (colour == "blue")
+					{
+						colour_ = 0x07;
+					}
+					else if (colour == "white")
+					{
+						colour_ = 0xFF;
+					}
+					else if (colour == "random")
+					{
+						srand(time(nullptr));
+						colour_ = rand() % 255;
+					}
+					else
+					{
+						throw std::invalid_argument("Invalid configuration: colour");
+					}
 				}
-				else if (colour == "green")
+				else if (*ptr != '\0')
 				{
-					colour_ = 0x14;
-				}
-				else if (colour == "blue")
-				{
-					colour_ = 0x07;
-				}
-				else if (colour == "white")
-				{
-					colour_ = 0xFF;
-				}
-				else if (colour == "random")
-				{
-					srand(time(nullptr));
-					colour_ = rand() % 255;
-				}
-				else
-				{
+					// we parsed something but there is still left over text
 					throw std::invalid_argument("Invalid configuration: colour");
 				}
 			}
-			else if (*ptr != '\0')
+			else if(key == "orientation")
 			{
-				// we parsed something but there is still left over text
-				throw std::invalid_argument("Invalid configuration: colour");
-			}
-		}
+				auto orientation = val.get<std::string>();
 
-		if (options.contains("orientation") == true)
-		{
-			auto orientation = options["orientation"].get<std::string>();
-
-			if (orientation == "upright")
-			{
-				blitMode_ |= BlitFlags::Upright;
-
-				if (blitMode_ & BlitFlags::Rgb332)
+				if (orientation == "upright")
 				{
-					width_ = 224;
+					blitMode_ |= BlitFlags::Upright;
+				}
+				else if (orientation == "cocktail")
+				{
+					blitMode_ &= ~BlitFlags::Upright;
 				}
 				else
 				{
-					width_ = 28;
+					throw std::invalid_argument("Invalid configuration: orientation");
 				}
-
-				height_ = 256;
 			}
-			else if (orientation != "cocktail")
+			else
 			{
-				throw std::invalid_argument("Invalid configuration: orientation");
+				throw std::invalid_argument("Invalid configuration option");
 			}
 		}
 	}
 
 	int MH_I8080ArcadeIO::GetVRAMWidth() const
 	{
-		return width_;
+		return blitMode_ & BlitFlags::Upright ? 224 : 256;
 	}
 
 	int MH_I8080ArcadeIO::GetVRAMHeight() const
 	{
-		return height_;
+		return blitMode_ & BlitFlags::Upright ? 256 : 224;
 	}
 } // namespace meen_hw::i8080_arcade

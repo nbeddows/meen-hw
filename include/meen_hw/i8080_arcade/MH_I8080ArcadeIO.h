@@ -119,28 +119,6 @@ namespace meen_hw::i8080_arcade
 		*/
 		uint8_t colour_{ 0xFF };
 
-		/** Output video width
-		
-			The width of the video is dictated by the blitMode in use.
-
-			@remark The width is in pixels.
-
-			@see blitMode_
-			@see BlitFlags
-		*/
-		int width_{ 256 };
-		
-		/** Output video height
-		
-			The height of the video is dictated by the blitMode in use.
-
-			@remark The height is in pixels.
-
-			@see blitMode_
-			@see BlitFlags
-		*/
-		int height_{ 224 };
-
 	public:
 		/** Read from the specified port
 
@@ -164,7 +142,7 @@ namespace meen_hw::i8080_arcade
 		
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
-		void BlitVRAM(uint8_t* dst, uint8_t rowBytes, uint8_t* src) final;
+		void BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src) final;
 
 		/** Blit options
 
