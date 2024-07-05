@@ -26,6 +26,7 @@ SOFTWARE.
 #include <vector>
 
 #include "meen_hw/MH_Factory.h"
+#include "meen_hw/MH_ResourcePool.h"
 
 namespace meen_hw::tests
 {
@@ -52,6 +53,50 @@ namespace meen_hw::tests
 	TEST_F(MeenHwTest, Version)
 	{
 		EXPECT_NE(nullptr, Version());	
+	}
+
+	TEST_F(MeenHwTest, ResourcePool)
+	{
+		meen_hw::MH_ResourcePool<int>::ResourcePtr outlivePool;
+
+		{
+			// Allocate a pool large enough to hold 3 int resources
+			auto pool = meen_hw::MH_ResourcePool<int>(3);
+
+			{
+				auto r1 = pool.GetResource();
+				EXPECT_NE(nullptr, r1);
+				auto r2 = pool.GetResource();
+				EXPECT_NE(nullptr, r2);
+				auto r3 = pool.GetResource();
+				EXPECT_NE(nullptr, r3);
+
+				// Pool should now be empty
+				auto r4 = pool.GetResource();
+				EXPECT_EQ(nullptr, r4);
+			}
+
+			// All resources should be returned to the pool now
+			{
+				auto r1 = pool.GetResource();
+				EXPECT_NE(nullptr, r1);
+				auto r2 = pool.GetResource();
+				EXPECT_NE(nullptr, r2);
+				auto r3 = pool.GetResource();
+				EXPECT_NE(nullptr, r3);
+
+				// Pool should now be empty
+				auto r4 = pool.GetResource();
+				EXPECT_EQ(nullptr, r4);
+			}
+
+			// All resources should be available
+			outlivePool = pool.GetResource();
+			ASSERT_NE(nullptr, outlivePool);
+			*outlivePool = 42;
+		}
+
+		EXPECT_EQ(42, *outlivePool);
 	}
 
 #ifdef ENABLE_MH_I8080ARCADE
