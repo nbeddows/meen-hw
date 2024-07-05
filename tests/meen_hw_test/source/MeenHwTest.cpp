@@ -22,6 +22,9 @@ SOFTWARE.
 
 #include <gtest/gtest.h>
 
+#include <bit>
+#include <vector>
+
 #include "meen_hw/MH_Factory.h"
 
 namespace meen_hw::tests
@@ -144,8 +147,8 @@ namespace meen_hw::tests
 		}
 	}
 
-	// Changes in the clock cycles between returning
-	// interrupts 1 and 2 with no change returning no interrupt
+	// Cycle through interrupts 1 and 2 when the clock changes
+	// Return no interrupt when the clock does not change
 	TEST_F(MeenHwTest, GenerateInterrupt)
 	{
 		auto isr = i8080ArcadeIO_->GenerateInterrupt(8333333, 16666);
@@ -188,6 +191,78 @@ namespace meen_hw::tests
 		EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions("{\"orientation\":\"upright\"}"););
 		EXPECT_EQ(224, i8080ArcadeIO_->GetVRAMWidth());
 		EXPECT_EQ(256, i8080ArcadeIO_->GetVRAMHeight());
+	}
+
+	TEST_F(MeenHwTest, BlitVRAM)
+	{
+		uint8_t srcVRAM[7168]; // 7168 - width * height @ 1bpp
+		uint8_t expectedVRAMUpright1[7168]; // 57344 - width * height @ 1pp
+		uint8_t expectedVRAMCocktail8[57344]; // 57344 - width * height @ 8pp
+		uint8_t expectedVRAMUpright8[57344]; // 57344 - width * height @ 8pp
+		
+		// We need to output white (0xFF) in the uncompressed case
+		i8080ArcadeIO_->SetOptions("{\"colour\":\"white\"}");
+
+		// Set the src vram to be blitted to be an alternating black and white scanline pattern
+		// This will act as the expectedVRAM for 1bpp native orientation test
+		for (auto data = srcVRAM; data < srcVRAM + 7168; data += 64)
+		{
+			// 32 - compressed row bytes
+			std::fill_n(data, 32, 0x00);
+			std::fill_n(data + 32, 32, 0xFF);
+		}
+
+		// Vertical black and white bars
+		std::fill(expectedVRAMUpright1, expectedVRAMUpright1 + 7168, 0xAA);
+
+		for (auto data = expectedVRAMCocktail8; data < expectedVRAMCocktail8 + 57344; data += 512)
+		{
+			// 256 - uncompressed row bytes
+			std::fill_n(data, 256, 0x00);
+			std::fill_n(data + 256, 256, 0xFF);
+		}
+
+		auto data = expectedVRAMUpright8;
+		std::fill_n(std::bit_cast<uint16_t*>(data), 28672, 0xFF00);
+
+		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, std::span<uint8_t> expectedVRAM, int expectedRowBytes, int padding, int compressed, const char* options)
+		{
+			// Blit to native format
+			EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions(options));
+			// To get the row bytes we need to shift down 3 (divide by 8) if we are compressed, 0 if we are uncompressed.
+			auto actualRowBytes = (i8080ArcadeIO_->GetVRAMWidth() >> compressed) + padding; // add some padding so the row bytes differs from the expected
+			auto dstVRAM = std::vector<uint8_t>(actualRowBytes * i8080ArcadeIO_->GetVRAMHeight());
+			EXPECT_NO_THROW(i8080ArcadeIO_->BlitVRAM(std::span(dstVRAM), actualRowBytes, VRAMToBlit));
+
+			auto expected = expectedVRAM.data();
+			auto actual = dstVRAM.data();
+			while(expected < expectedVRAM.data() + expectedVRAM.size())
+			{
+				EXPECT_EQ(0, memcmp(actual, expected, expectedRowBytes));
+				actual += actualRowBytes;
+				expected += expectedRowBytes;
+			}
+		};
+
+		// Native blit without padding
+		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 0, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
+		// Native blit with padding
+		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 2, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
+
+		// Native orientation 8pp blit without padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMCocktail8), 256, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		// Native orientation 8pp blit with padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMCocktail8), 256, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+
+		// Native bpp blit with upright orientation without padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright1), 28, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		// Native bpp blit with upright orientation with padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright1), 28, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+
+		// 8 bpp blit with upright orientation without padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright8), 224, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		// 8 bpp blit with upright orientation with padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright8), 224, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 	}
 #endif
 
