@@ -23,6 +23,8 @@ SOFTWARE.
 #ifndef MEEN_HW_MH_II8080ARCADEIO_H
 #define MEEN_HW_MH_II8080ARCADEIO_H
 
+#include <span>
+
 namespace meen_hw
 {
 	/** Intel 8080 arcade hardware emulation.
@@ -156,7 +158,7 @@ namespace meen_hw
 			How the vram is blitted is dictated by the options specifed by `SetOptions`.
 
 			@param	dstVRAM			The video memory to write to (texture memory).
-			@param	dstVRAMRowBytes	The width of each dst scanline in bytes.
+			@param	dstVRAMRowBytes	The width of each dst vram scanline in bytes.
 			@param	srcVRAM			The video ram to copy.
 
 			@remark					No boundry checks are performed. It is expected that
@@ -164,7 +166,7 @@ namespace meen_hw
 									GetVideoHeight methods to determine a minimum allocaion
 									size.
 		*/
-		virtual void BlitVRAM(uint8_t* dstVRAM, uint8_t dstVRAMRowBytes, uint8_t* srcVRAM) = 0;
+		virtual void BlitVRAM(std::span<uint8_t> dstVRAM, int dstVRAMRowBytes, std::span<uint8_t> srcVRAM) = 0;
 
 		/** Output video width in pixels
 

@@ -142,7 +142,7 @@ namespace meen_hw::i8080_arcade
 		
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
-		void BlitVRAM(uint8_t* dst, uint8_t rowBytes, uint8_t* src) final;
+		void BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src) final;
 
 		/** Blit options
 
