@@ -160,6 +160,9 @@ namespace meen_hw
         */
         explicit MH_ResourcePool(int resourcePoolSize = 1)
         {
+            resourceMutex_ = std::make_shared<std::mutex>();
+            resourcePool_ = std::make_shared<std::list<std::unique_ptr<T>>>();
+
             for (int i = 0; i < resourcePoolSize; i++)
             {
                 resourcePool_->emplace_back(std::make_unique<T>());
