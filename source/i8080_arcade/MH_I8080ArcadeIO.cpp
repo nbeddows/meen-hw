@@ -119,15 +119,14 @@ namespace meen_hw::i8080_arcade
 		return isr;
 	}
 
-	void MH_I8080ArcadeIO::BlitVRAM(uint8_t* dst, uint8_t rowBytes, uint8_t* src)
+	void MH_I8080ArcadeIO::BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src)
 	{
-		constexpr int vramWidth = 256;
-		constexpr int vramSize = 7168;
+		assert(dst.size() >= src.size());
 
 		auto decompressVram = [src, dst, rb = rowBytes, colour = colour_](uint8_t* nextCol, bool cocktail)
 		{
-			auto vramStart = src;
-			auto vramEnd = vramStart + vramSize;
+			auto vramStart = src.begin();
+			auto vramEnd = src.end();
 			int8_t shift = 0;
 			auto ptr = nextCol;
 
@@ -139,8 +138,20 @@ namespace meen_hw::i8080_arcade
 				shift = ++shift & 0x07;
 				//Move to the next vram byte if we have done a full cycle.
 				vramStart += shift == 0;
-				//If we are not at the end, move to the next row, otherwise move to the next column.
-				cocktail == true || ptr - rb < dst ? ptr = ++nextCol : ptr -= rb;
+			
+				if(cocktail == true)
+				{
+					if (++ptr - nextCol >= 256)
+					{
+						nextCol += rb;
+						ptr = nextCol;
+					}
+				}
+				else
+				{
+					//If we are not at the first row, move to the previous row, otherwise move to the next column.
+					ptr - rb < dst.data() ? ptr = ++nextCol : ptr -= rb;
+				}
 			}
 		};
 
@@ -148,14 +159,14 @@ namespace meen_hw::i8080_arcade
 		{
 			case BlitFlags::Upright:
 			{
-				static constexpr int srcWidth = vramWidth;
-				static constexpr int srcWidthMinus1 = vramWidth - 1;
+				static constexpr int srcWidth = 32;
+				static constexpr int srcWidthMinus1 = srcWidth - 1;
 				// Need to skip an additional 7 rows once the vertical sampling is complete.
 				static constexpr int srcRowSkip = srcWidth * 7;
 
-				auto begin = src;
-				auto end = begin + vramSize;
-				auto start = dst + rowBytes * (GetVRAMHeight() - 1);
+				auto begin = src.begin();
+				auto end = src.end();
+				auto start = dst.begin() + rowBytes * (256 - 1);
 				auto ptr = start;
 
 				while (begin < end)
@@ -164,7 +175,7 @@ namespace meen_hw::i8080_arcade
 					{
 						uint8_t byte = 0;
 
-						// transpose the compressed pixels (sample from 8 pixels vertically)
+						// Transpose the compressed pixels (sample from 8 pixels vertically)
 						for (int j = 0; j < 8; j++)
 						{
 							byte |= (((begin[j * srcWidth] >> i) & 0x01) << j);
@@ -173,30 +184,46 @@ namespace meen_hw::i8080_arcade
 						*ptr = byte;
 
 						// Move to the previous row, else the next column
-						ptr - rowBytes >= dst ? ptr -= rowBytes : ptr = ++start;
+						ptr - rowBytes >= dst.begin() ? ptr -= rowBytes : ptr = ++start;
 					}
 
 					begin++;
 
 					// Since we sample 8 vertical pixels we need to skip another 7 rows when we get to the end of the current row.
 					// TODO: mem pool frames need to be 32 bit aligned, then we don't have to subtract src, ie; just for (begin & (width_ - 1)) == 0
-					begin += (((begin - src & srcWidthMinus1) == 0) * srcRowSkip);
+					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);				
 				}
 				break;
 			}
 			case BlitFlags::Native:
 			{
-				memcpy(dst, src, vramSize);
+				if(rowBytes == 32)
+				{
+					std::copy(src.begin(), src.end(), dst.begin());
+				}
+				else
+				{
+					auto d = dst.begin();;
+					auto s = src.begin();
+
+					// copy out each scanline
+					while(s < src.end())
+					{
+						std::copy_n(s, 32, d);
+						d += rowBytes;
+						s += 32;
+					}
+				}
 				break;
 			}
 			case BlitFlags::Rgb332:
 			{
-				decompressVram(dst, true);
+				decompressVram(dst.data(), true);
 				break;
 			}
 			case BlitFlags::Upright8bpp:
 			{
-				decompressVram(dst + rowBytes * (GetVRAMHeight() - 1), false);
+				decompressVram(dst.data() + rowBytes * (256 - 1), false);
 				break;
 			}
 			default:
