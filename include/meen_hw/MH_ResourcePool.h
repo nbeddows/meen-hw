@@ -127,13 +127,12 @@ namespace meen_hw
                     }
                     else
                     {
-                        printf("Failed to acquire frame mutex\n");
+                        assert(resourceMutex != nullptr);
                         resourcePool->emplace_back(std::unique_ptr<T>{resource});
                     }
                 }
                 else
                 {
-                    printf("Failed to get the frame pool shared_ptr, deleting the video frame to prevent a memory leak\n");
                     std::default_delete<T>{}(resource);
                 }
             }
