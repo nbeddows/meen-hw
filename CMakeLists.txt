@@ -20,6 +20,7 @@
 
 cmake_minimum_required (VERSION 3.25)
 set(include_dir include)
+set(resource_dir resource)
 set(source_dir source)
 set(lib_name meen_hw)
 set(major 0)
@@ -70,6 +71,26 @@ set (${lib_name}_include_files
 	${include_dir}/${lib_name}/MH_ResourcePool.h
 )
 
+if(MSVC)
+  include(${resource_dir}/generate_product_version.cmake)
+
+  generate_product_version(
+    versionResource
+    COMPANY_NAME "Nicolas Beddows"
+    FILE_DESCRIPTION "Machine Emulator Engine Hardware"
+    NAME "MEEN Hardware"
+    ORIGINAL_FILE_NAME "${lib_name}.dll"
+    PRODUCT_ICON ""
+    VERSION_MAJOR ${major}
+    VERSION_MINOR ${minor}
+    VERSION_PATCH ${bugfix}
+  )
+
+  set (${lib_name}_resource_files
+    ${versionResource}
+  )
+endif()
+
 set (${lib_name}_source_files
 	${source_dir}/MH_Factory.cpp
 )
@@ -88,10 +109,12 @@ if(enable_i8080_arcade STREQUAL ON)
 endif()
 
 SOURCE_GROUP(meen_hw/${include_dir} FILES ${${lib_name}_include_files})
+SOURCE_GROUP(meen_hw/${resource_dir} FILES ${${lib_name}_resource_files})
 SOURCE_GROUP(meen_hw/${source_dir} FILES ${${lib_name}_source_files})
 
 add_library(${lib_name} ${lib_type}
   ${${lib_name}_include_files}
+  ${${lib_name}_resource_files}
   ${${lib_name}_source_files}
   ${${lib_name}_i8080_arcade_include_files}
   ${${lib_name}_i8080_arcade_source_files}
@@ -123,9 +146,18 @@ if (NOT BUILD_TESTING STREQUAL OFF)
   add_subdirectory(tests/meen_hw_test)
 endif()
 
+set(CMAKE_INSTALL_PREFIX ./)
+
 target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
   ${${lib_name}_include_files}
 )
 
 install(TARGETS ${lib_name} FILE_SET HEADERS)
-install(FILES LICENSE DESTINATION licenses)
+install(FILES LICENSE DESTINATION .)
+install(FILES README.md DESTINATION .)
+
+if(NOT DEFINED WIN32)
+    set(CPACK_SET_DESTDIR ON)
+endif()
+
+include(CPack)
