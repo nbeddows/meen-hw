@@ -123,9 +123,18 @@ if (NOT BUILD_TESTING STREQUAL OFF)
   add_subdirectory(tests/meen_hw_test)
 endif()
 
+set(CMAKE_INSTALL_PREFIX ./)
+
 target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
   ${${lib_name}_include_files}
 )
 
 install(TARGETS ${lib_name} FILE_SET HEADERS)
-install(FILES LICENSE DESTINATION licenses)
+install(FILES LICENSE DESTINATION .)
+install(FILES README.md DESTINATION .)
+
+if(NOT DEFINED WIN32)
+    set(CPACK_SET_DESTDIR ON)
+endif()
+
+include(CPack)

@@ -42,3 +42,28 @@ target_link_libraries(${exe_name} PRIVATE
 )
 
 target_include_directories(${exe_name} PRIVATE ${CMAKE_SOURCE_DIR}/${include_dir})
+
+if(DEFINED WIN32)
+  set(soExt .dll)
+  set(scriptExt .bat)
+
+  file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
+  "@echo off\n\
+set PATH=%cd%\\bin;%PATH%\n\
+bin\\${lib_name}_test\n\
+pause\n\
+exit"
+)
+else()
+  set(soExt .so)
+  set(scriptExt .sh)
+
+  file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
+  "#!/bin/bash\n\
+export LD_LIBRARY_PATH=`pwd`/bin:\${LD_LIBRARY_PATH}\n\
+bin/${lib_name}_test"
+)
+endif()
+
+install(PROGRAMS ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt} DESTINATION .)
+install(TARGETS ${exe_name} RUNTIME)
