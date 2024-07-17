@@ -23,6 +23,7 @@ SOFTWARE.
 #ifndef MEEN_HW_MH_RESOURCEPOOL_H
 #define MEEN_HW_MH_RESOURCEPOOL_H
 
+#include <assert.h>
 #include <memory>
 #include <mutex>
 #include <list>

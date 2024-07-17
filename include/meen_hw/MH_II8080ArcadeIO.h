@@ -133,9 +133,9 @@ namespace meen_hw
 			This informs the ROM that it is safe to draw to the
 			top and bottom of the video ram.
 
-			@return		uint8_t	0 when no interrupt has occured.
-								1 when the 'beam' is near the centre of the screen.
-								2 when the 'beam' is at the end (vBlank). 
+			@return				0: no interrupt has occured.
+								1: the 'beam' is near the centre of the screen.
+								2: the 'beam' is at the end (vBlank). 
 		*/
 		virtual uint8_t GenerateInterrupt(uint64_t currTime, uint64_t cycles) = 0;
 

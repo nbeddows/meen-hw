@@ -24,7 +24,9 @@ class MeenHwRecipe(ConanFile):
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
         "LICENSE",\
+        "README.md",\
         "include/*",\
+        "resource/*",\
         "source/*",\
         "tests/meen_hw_test/*"
 
@@ -66,7 +68,7 @@ class MeenHwRecipe(ConanFile):
 
         if can_run(self) and not self.conf.get("tools.build:skip_test", default=False):
             testsDir = os.path.join(self.source_folder, "artifacts", str(self.settings.build_type), str(self.settings.arch), self.cpp_info.bindirs[0])
-            self.run(os.path.join(testsDir, "MeenHwTest "))
+            self.run(os.path.join(testsDir, "meen_hw_test "))
         #    if self.options.with_python:
         #        cmd = os.path.join(self.source_folder, "tests/meen_hw/source/test_MeenHw.py -v ")
         #        self.run("python " + cmd)
