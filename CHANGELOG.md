@@ -1,4 +1,4 @@
-0.1.0
+0.1.0 [17/07/24]
 * Added i8080 arcade and resource pool unit tests.
 * Moved and refactored the i8080 arcade hardware code
   from the space-invaders repo into MH_I8080ArcadeIO.
