@@ -31,11 +31,17 @@ namespace meen_hw
 {
 	/** A basic resource pool.
 
-		Allocates a list of resources of a specified size.
-        Returns the resource to the pool once the resource
-        has been destructed.
+	    The resource pool is empty upon construction and can be
+        populated via the AddResource method. The GetResource method
+        can be used to fetch a resource from the resource pool. Once
+        the obtained resource is no longer required (goes out of
+        scope or set to nullptr for example) it will be returned to
+        the pool or destructed (if the pool no longer exists).
+        A custom deleter can be attached to the resource pool to custom
+        destruct resources if required otherwise std::default_delete
+        will be used.
 	*/
-    template<class T>
+    template<class T, class D = std::default_delete<T>>
 	class MH_ResourcePool final
 	{
     private:
@@ -57,7 +63,7 @@ namespace meen_hw
 
             @remark     Marked as mutable so GetResource can remain const.
         */
-        mutable std::shared_ptr<std::list<std::unique_ptr<T>>> resourcePool_;
+        mutable std::shared_ptr<std::list<std::unique_ptr<T, D>>> resourcePool_;
 
         /** Custom resource deleter
         
@@ -75,7 +81,7 @@ namespace meen_hw
 
                 @see    MH_ResourcePool::resourcePool_
             */
-            std::weak_ptr<std::list<std::unique_ptr<T>>> resourcePool_;
+            std::weak_ptr<std::list<std::unique_ptr<T, D>>> resourcePool_;
             
             /** rsourceMutex_
             
@@ -88,6 +94,13 @@ namespace meen_hw
                 @see    MH_ResourcePool::resourceMutex_
             */
             std::weak_ptr<std::mutex> resourceMutex_;
+
+            /** Resource deleter
+            
+                The deleter that will be used to delete resources once the resource pool
+                is no longer required.
+            */
+            D resourceDeleter_;
 
         public:
             /** Default constructor
@@ -103,7 +116,7 @@ namespace meen_hw
                 @param      resourcePool       The resource pool that desructed resources will be returned to.
                 @param      resourceMutex      The resource pool mutex that will be used for mutual exclusion.
             */
-            ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T>>>& resourcePool, const std::shared_ptr<std::mutex>& resourceMutex)
+            ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T, D>>>& resourcePool, const std::shared_ptr<std::mutex>& resourceMutex)
                 : resourcePool_(resourcePool)
                 , resourceMutex_{resourceMutex}
             {
@@ -113,6 +126,8 @@ namespace meen_hw
             /** Custom deleter
             
                 A deleter used to recycle resources.
+
+                @param      resource            The resource to recycle/destruct
             */
             void operator()(T* resource)
             {
@@ -123,17 +138,17 @@ namespace meen_hw
                     if(resourceMutex)
                     {
                         std::lock_guard<std::mutex> lg(*resourceMutex);
-                        resourcePool->emplace_back(std::unique_ptr<T>{resource});
+                        resourcePool->emplace_back(std::unique_ptr<T, D>{resource});
                     }
                     else
                     {
                         assert(resourceMutex != nullptr);
-                        resourcePool->emplace_back(std::unique_ptr<T>{resource});
+                        resourcePool->emplace_back(std::unique_ptr<T, D>{resource});
                     }
                 }
                 else
                 {
-                    std::default_delete<T>{}(resource);
+                    resourceDeleter_(resource);
                 }
             }
         };
@@ -151,21 +166,26 @@ namespace meen_hw
 
             A very basic resource pool.
 
-            @param      resourcePoolSize       The number of resources to allocate.
-
-            @remark     default resource pool size is 1.
-
-            @see resourcePool_
+            @remark     The resource pool will be empty upon construction, call AddResource to populate
+                        the resource pool.
         */
-        explicit MH_ResourcePool(int resourcePoolSize = 1)
+        explicit MH_ResourcePool()
         {
             resourceMutex_ = std::make_shared<std::mutex>();
-            resourcePool_ = std::make_shared<std::list<std::unique_ptr<T>>>();
+            resourcePool_ = std::make_shared<std::list<std::unique_ptr<T, D>>>();
+        }
 
-            for (int i = 0; i < resourcePoolSize; i++)
-            {
-                resourcePool_->emplace_back(std::make_unique<T>());
-            }
+        /** Populate the resource pool
+        
+            Add an item to the resource pool.
+
+            @param  resource    The resource to be added.
+
+        */
+        void AddResource(T* resource)
+        {
+            std::lock_guard<std::mutex> lg(*resourceMutex_);
+            resourcePool_->emplace_back(std::unique_ptr<T, D>{resource});
         }
 
         /** Destructor
@@ -180,7 +200,7 @@ namespace meen_hw
         */
         ResourcePtr GetResource() const
         {
-            std::unique_ptr<T> resource;
+            std::unique_ptr<T, D> resource;
 
             // This method is called from ServiceInterrupts so we don't 
             // want to block waiting for this mutex as we could stall the cpu,
