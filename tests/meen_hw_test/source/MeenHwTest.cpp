@@ -56,12 +56,30 @@ namespace meen_hw::tests
 	}
 
 	TEST_F(MeenHwTest, ResourcePool)
-	{
-		meen_hw::MH_ResourcePool<int>::ResourcePtr outlivePool;
+	{		
+		static int counter = 0;
+
+		struct ResourceDeleter
+		{
+			void operator()(int*)
+			{
+				counter++;
+			};
+		};
+
+		meen_hw::MH_ResourcePool<int, ResourceDeleter>::ResourcePtr outlivePool;
 
 		{
-			// Allocate a pool large enough to hold 3 int resources
-			auto pool = meen_hw::MH_ResourcePool<int>(3);
+			auto pool = meen_hw::MH_ResourcePool<int, ResourceDeleter>();
+
+			// Add 3 resources
+			int r1 = 0;
+			int r2 = 0;
+			int r3 = 0;
+
+			pool.AddResource(&r1);
+			pool.AddResource(&r2);
+			pool.AddResource(&r3);
 
 			{
 				auto r1 = pool.GetResource();
@@ -95,8 +113,14 @@ namespace meen_hw::tests
 			ASSERT_NE(nullptr, outlivePool);
 			*outlivePool = 42;
 		}
-
+		
+		// The pool is dead, resource should be valid
 		EXPECT_EQ(42, *outlivePool);
+		// The pool is dead, the resource should be destroyed
+		outlivePool = nullptr;
+
+		//Check to total number of deletions
+		EXPECT_EQ(3, counter);
 	}
 
 #ifdef ENABLE_MH_I8080ARCADE
