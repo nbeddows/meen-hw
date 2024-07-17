@@ -24,7 +24,9 @@ class MeenHwRecipe(ConanFile):
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
         "LICENSE",\
+        "README.md",\
         "include/*",\
+        "resource/*",\
         "source/*",\
         "tests/meen_hw_test/*"
 
