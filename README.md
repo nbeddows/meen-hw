@@ -1,6 +1,6 @@
 ### Introduction
 
-Machine Emulator ENgine Hardware is a collection of 8bit emulated hardwares designed to be used a helper modules when building controllers that fit into the [Machine Emulator ENgine framework](http://github.com/nbeddows/mach-emu/).
+Machine Emulator ENgine Hardware is a collection of 8bit emulated hardwares designed to be used as helper modules when building controllers that fit into the [Machine Emulator ENgine framework](http://github.com/nbeddows/mach-emu/).
 
 Supported hardwares:
 
@@ -56,7 +56,7 @@ The following dependent packages will be installed if required:
 **5.** Run the unit tests:
 
 **Linux/Windows (x86_64)**:
-- `artifacts/Release/x86_64/bin/space-invaders`.
+- `artifacts/Release/x86_64/bin/meen_hw_test`.
 
 **Linux (armv7hf, armv8)**:
 
