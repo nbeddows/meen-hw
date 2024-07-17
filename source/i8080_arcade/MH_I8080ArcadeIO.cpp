@@ -166,7 +166,7 @@ namespace meen_hw::i8080_arcade
 
 				auto begin = src.begin();
 				auto end = src.end();
-				auto start = dst.begin() + rowBytes * (256 - 1);
+				auto start = dst.data() + rowBytes * (256 - 1);
 				auto ptr = start;
 
 				while (begin < end)
@@ -184,7 +184,7 @@ namespace meen_hw::i8080_arcade
 						*ptr = byte;
 
 						// Move to the previous row, else the next column
-						ptr - rowBytes >= dst.begin() ? ptr -= rowBytes : ptr = ++start;
+						ptr - rowBytes >= dst.data() ? ptr -= rowBytes : ptr = ++start;
 					}
 
 					begin++;
