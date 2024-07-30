@@ -148,7 +148,7 @@ namespace meen_hw::i8080_arcade
 
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
-		void SetOptions(const char* options) final;
+		std::error_code SetOptions(const char* options) final;
 
 		/** Output video width
 
