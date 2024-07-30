@@ -1,3 +1,6 @@
+0.2.0
+* Replaced exceptions with std::error_code.
+
 0.1.0 [17/07/24]
 * Added i8080 arcade and resource pool unit tests.
 * Moved and refactored the i8080 arcade hardware code
