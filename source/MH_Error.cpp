@@ -29,11 +29,13 @@ namespace meen_hw
 		class category : public std::error_category
 		{
 		public:
+			//cppcheck-suppress unusedFunction
 			virtual const char* name() const noexcept override
 			{
 				return "meen_hw::category";
 			}
 
+			//cppcheck-suppress unusedFunction
 			virtual std::string message(int ec) const override
 			{
 				switch(ec)
@@ -55,6 +57,7 @@ namespace meen_hw
 		};
 	} // namespace detail
 
+	//cppcheck-suppress unusedFunction
 	const std::error_category& category()
 	{
 		static detail::category instance;

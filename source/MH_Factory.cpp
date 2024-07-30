@@ -28,11 +28,13 @@ SOFTWARE.
 
 namespace meen_hw
 {
+	//cppcheck-suppress unusedFunction
 	const char* Version()
 	{
 		return MEEN_HW_VERSION;
 	}
 
+	//cppcheck-suppress unusedFunction
 	std::unique_ptr<MH_II8080ArcadeIO> MakeI8080ArcadeIO()
 	{
 #ifdef ENABLE_MH_I8080ARCADE
