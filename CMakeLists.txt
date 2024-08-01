@@ -133,9 +133,14 @@ target_compile_definitions(${lib_name} PRIVATE
 )
 
 if(enable_i8080_arcade STREQUAL ON)
-  target_compile_definitions(${lib_name} PRIVATE
-    ENABLE_MH_I8080ARCADE
-  )
+  target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_I8080ARCADE)
+endif()
+
+if(enable_rp2040 STREQUAL ON)
+  target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_RP2040)
+  target_compile_options(${lib_name} PUBLIC -fno-exceptions)
+  # this emits warnings when compiling the rp2040 source rightfully stating that it is not valid for C code, so we make it private
+  target_compile_options(${lib_name} PRIVATE -fno-rtti)
 endif()
 
 target_include_directories(${lib_name} PRIVATE
