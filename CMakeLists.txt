@@ -27,9 +27,27 @@ set(major 0)
 set(minor 1)
 set(bugfix 0)
 
-project(${lib_name} VERSION ${major}.${minor}.${bugfix})
+if(enable_rp2040 STREQUAL ON)
+  set(CMAKE_C_COMPILER_WORKS 1)
+  set(CMAKE_CXX_COMPILER_WORKS 1)
+  include (pico_sdk_import.cmake)
+endif()
 
-if(MSVC)
+project(${lib_name} VERSION ${major}.${minor}.${bugfix} LANGUAGES C CXX ASM)
+
+if(enable_rp2040 STREQUAL ON)
+  add_executable(Pioasm IMPORTED)
+  set_property(TARGET Pioasm PROPERTY IMPORTED_LOCATION $ENV{PICO_SDK_PATH}/build/pioasm/pioasm)
+  set(Pioasm_FOUND 1)
+
+  add_executable(ELF2UF2 IMPORTED)
+  set_property(TARGET ELF2UF2 PROPERTY IMPORTED_LOCATION $ENV{PICO_SDK_PATH}/build/elf2uf2/elf2uf2)
+  set(ELF2UF2_FOUND 1)
+
+  pico_sdk_init()
+endif()
+
+if(DEFINED MSVC)
   set(build_type $<CONFIG>)
 else()
   set(build_type ${CMAKE_BUILD_TYPE})
@@ -49,20 +67,36 @@ endif()
 
 if(${BUILD_SHARED_LIBS} STREQUAL ON)
   set(lib_type SHARED)
+
+  if(DEFINED WIN32)
+    set(ext dll)
+  else()
+    set(ext so)
+  endif()
 else()
   set(lib_type STATIC)
+
+  if(DEFINED WIN32)
+    set(ext lib)
+  else()
+    set(ext a)
+  endif()
 endif()
 
-set(artifacts_dir $<1:${CMAKE_SOURCE_DIR}/artifacts/${build_type}/${build_arch}>)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${artifacts_dir}/${archive_dir})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${artifacts_dir}/${runtime_dir})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${artifacts_dir}/${runtime_dir})
+
+# TODO: rp2040 does not output all artifacts correctly when setting this - investigate me
+if(enable_rp2040 STREQUAL OFF)
+  set(artifacts_dir $<1:${CMAKE_SOURCE_DIR}/artifacts/${build_type}/${build_arch}>)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${artifacts_dir}/${archive_dir})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${artifacts_dir}/${runtime_dir})
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${artifacts_dir}/${runtime_dir})
+endif()
 
 find_package(nlohmann_json REQUIRED)
 
 #if(enable_python_module STREQUAL ON)
-#    find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
-#    find_package(pybind11 REQUIRED)
+#  find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+#  find_package(pybind11 REQUIRED)
 #endif()
 
 set (${lib_name}_private_include_files
@@ -70,12 +104,12 @@ set (${lib_name}_private_include_files
 )
 
 set (${lib_name}_public_include_files
-	${include_dir}/${lib_name}/MH_Factory.h
-	${include_dir}/${lib_name}/MH_II8080ArcadeIO.h
-	${include_dir}/${lib_name}/MH_ResourcePool.h
+  ${include_dir}/${lib_name}/MH_Factory.h
+  ${include_dir}/${lib_name}/MH_II8080ArcadeIO.h
+  ${include_dir}/${lib_name}/MH_ResourcePool.h
 )
 
-if(MSVC)
+if(DEFINED MSVC)
   include(${resource_dir}/generate_product_version.cmake)
 
   generate_product_version(
@@ -96,8 +130,8 @@ if(MSVC)
 endif()
 
 set (${lib_name}_source_files
-	${source_dir}/MH_Error.cpp
-	${source_dir}/MH_Factory.cpp
+  ${source_dir}/MH_Error.cpp
+  ${source_dir}/MH_Factory.cpp
 )
 
 if(enable_i8080_arcade STREQUAL ON)
@@ -139,7 +173,6 @@ endif()
 if(enable_rp2040 STREQUAL ON)
   target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_RP2040)
   target_compile_options(${lib_name} PUBLIC -fno-exceptions)
-  # this emits warnings when compiling the rp2040 source rightfully stating that it is not valid for C code, so we make it private
   target_compile_options(${lib_name} PRIVATE -fno-rtti)
 endif()
 
@@ -160,6 +193,23 @@ endif()
 set(CMAKE_INSTALL_PREFIX ./)
 set(CPACK_PACKAGE_FILE_NAME ${lib_name}-v${CMAKE_PROJECT_VERSION}-${CMAKE_SYSTEM}-${CMAKE_SYSTEM_PROCESSOR}-${runtime_dir})
 
+if(DEFINED CMAKE_STRIP)
+  set(STRIP_PKG
+    COMMAND ${CMAKE_COMMAND} -E tar -xzf ${CPACK_PACKAGE_FILE_NAME}.tar.gz
+    COMMAND ${CMAKE_STRIP} -s ${CPACK_PACKAGE_FILE_NAME}/${runtime_dir}/${lib_name}_test
+    COMMAND ${CMAKE_STRIP} -s ${CPACK_PACKAGE_FILE_NAME}/${archive_dir}/lib${lib_name}.${ext}
+    COMMAND ${CMAKE_COMMAND} -E tar czf ${CPACK_PACKAGE_FILE_NAME}.tar.gz ${CPACK_PACKAGE_FILE_NAME}/
+    COMMAND ${CMAKE_COMMAND} -E rm -r ${CPACK_PACKAGE_FILE_NAME}/
+  )
+endif()
+
+add_custom_target(${lib_name}_pkg
+  #todo: add doxygen COMMAND
+  COMMAND cppcheck -i build -i _CPack_Packages -i tests --inline-suppr --enable=warning,style,performance,portability,unusedFunction --std=c++20 ${CMAKE_SOURCE_DIR}
+  COMMAND cpack --config ${CMAKE_BINARY_DIR}/CPackConfig.cmake -C ${build_type} -G TGZ
+  ${STRIP_PKG}
+)
+
 target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
   ${${lib_name}_public_include_files}
 )
@@ -169,7 +219,7 @@ install(FILES LICENSE DESTINATION .)
 install(FILES README.md DESTINATION .)
 
 if(NOT DEFINED WIN32)
-    set(CPACK_SET_DESTDIR ON)
+  set(CPACK_SET_DESTDIR ON)
 endif()
 
 include(CPack)

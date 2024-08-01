@@ -20,42 +20,56 @@
 
 set(exe_name meen_hw_test)
 
-find_package(GTest REQUIRED)
+if(enable_rp2040 STREQUAL ON)
+  set(${exe_name}_source_files ${source_dir}/MeenHwTestRp2040.cpp)
+  set(${exe_name}_deps pico_stdlib)
+else()
+  find_package(GTest REQUIRED)
 
-set(${exe_name}_source_files
-  ${source_dir}/MeenHwTest.cpp
-)
+  set(${exe_name}_source_files ${source_dir}/MeenHwTest.cpp)
+  set(${exe_name}_deps GTest::GTest)
+endif()
 
 SOURCE_GROUP("Source" FILES ${${exe_name}_source_files})
 
 add_executable(${exe_name} ${${exe_name}_source_files})
 
 target_link_libraries(${exe_name} PRIVATE
-  GTest::GTest
+  ${${exe_name}_deps}
   ${lib_name}
 )
 
-if(DEFINED WIN32)
-  set(soExt .dll)
-  set(scriptExt .bat)
+install(TARGETS ${exe_name} RUNTIME)
 
-  file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
-  "@echo off\n\
+if(enable_rp2040 STREQUAL ON)
+  pico_add_extra_outputs(${exe_name})
+  install(PROGRAMS ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.bin DESTINATION ./bin)
+  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.dis DESTINATION ./lib)
+  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.elf.map DESTINATION ./lib)
+  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.hex DESTINATION ./lib)
+  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.uf2 DESTINATION ./lib)
+else()
+  if(DEFINED WIN32)
+    set(soExt .dll)
+    set(scriptExt .bat)
+
+    file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
+    "@echo off\n\
 set PATH=%cd%\\bin;%PATH%\n\
 bin\\${lib_name}_test\n\
 pause\n\
 exit"
-)
-else()
-  set(soExt .so)
-  set(scriptExt .sh)
+  )
+  else()
+    set(soExt .so)
+    set(scriptExt .sh)
 
-  file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
-  "#!/bin/bash\n\
+    file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
+    "#!/bin/bash\n\
 export LD_LIBRARY_PATH=`pwd`/bin:\${LD_LIBRARY_PATH}\n\
 bin/${lib_name}_test"
 )
-endif()
+  endif()
 
-install(PROGRAMS ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt} DESTINATION .)
-install(TARGETS ${exe_name} RUNTIME)
+  install(PROGRAMS ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt} DESTINATION .)
+endif()
