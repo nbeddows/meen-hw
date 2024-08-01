@@ -30,10 +30,6 @@ SOURCE_GROUP("Source" FILES ${${exe_name}_source_files})
 
 add_executable(${exe_name} ${${exe_name}_source_files})
 
-if(enable_rp2040 STREQUAL ON)
-  target_compile_options(${exe_name} PRIVATE -fno-rtti)
-endif()
-
 target_link_libraries(${exe_name} PRIVATE
   GTest::GTest
   ${lib_name}
