@@ -4,7 +4,7 @@ Machine Emulator ENgine Hardware is a collection of 8bit emulated hardwares desi
 
 Supported hardwares:
 
-- i8080 arcade - hardware emulation based on the 1978 Midway/Taito Space Invaders arcade machine. Along with the original Space Invaders title, this emulated hardware is also compatible with Lunar Rescue (1979), Balloon Bomber (1980) and Space Invaders II (Deluxe Space Invaders) (1980). **NOTE**: currently does not support emulated audio, the consuming application needs to provide audio samples.
+- i8080 arcade - hardware emulation based on the 1978 Midway/Taito Space Invaders arcade machine. Along with the original Space Invaders title, this emulated hardware is also compatible with Lunar Rescue (1979), Balloon Bomber (1980) and Space Invaders Part II/Deluxe (1980). **NOTE**: currently does not support emulated audio, the consuming application needs to provide audio samples.
 
 ### Compilation
 
@@ -16,9 +16,32 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 
 - [Install Conan](https://conan.io/downloads/).
 - `sudo apt install cmake`.
-- `sudo apt install gcc-arm-linux-gnueabihf` (if cross compiling for armv7hf).
-- `sudo apt install gcc-aarch64-linux-gnu` (if cross compiling for aarch64).
-- `sudo apt install g++-aarch64-linux-gnu` (if cross compiling for aarch64).
+- cross compilation:
+  - armvv7hf:
+    - `sudo apt install gcc-arm-linux-gnueabihf`.
+  - aarch64:
+    - `sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu`.
+  - rp2040:
+    - `sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential libstdc++-arm-none-eabi-newlib`.
+    - `git clone https://github.com/raspberrypi/pico-sdk.git`
+    - `cd pico-sdk`
+    - `git submodule update --init`
+    - build the Raspberry Pi SDK:
+      - Conan and the Raspberry Pi Pico Sdk seem to have an issue with conflicting use of the cmake toolchain file
+        which results in test programs not being able to be compiled during the conan build process as outlined [here](https://github.com/raspberrypi/pico-sdk/issues/1693).
+        At this point we need to build the sdk so that we have the required tools pre-built so the Conan build process will succeed:
+        - `cd pico-sdk`
+        - `mkdir build`<br>
+           **NOTE**: Conan will assume that the build tools are located in the `build` directory, **do not** use a different directory name.
+        - `cd build`
+        - `cmake ..`
+        - `make`
+    - Set the Raspberry Pi Pico SDK Path:
+        -`export PICO_SDK_PATH=${PATH_TO_PICO_SDK}`
+        To avoid having to export it on every session, add it to the end of your .bashrc file instead:
+        - `nano ~/.bashrc`
+        - `export PICO_SDK_PATH=${PATH_TO_PICO_SDK}`
+	- save, close and re-open shell.
 
 ##### Windows
 
@@ -31,6 +54,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - Using the default build and host profiles: `conan install . --build=missing`.
 - Using the default build profile targeting 32 bit Raspberry Pi OS: `conan install . --build=missing -pr:h=profiles/raspberry-32`.<br>
 - Using the default build profile targeting 64 bit Raspberry Pi OS: `conan install . --build=missing -pr:h=profiles/raspberry-64`.<br>
+- Using the default build profile targeting the Raspberry Pi 2040 microcontroller: `conan install . --build=missing -pr:h=profiles/rp2040`.<br>
 
 **NOTE**: raspberry host profiles can be obtained from the [mach-emu project](https://github.com/nbeddows/mach-emu/tree/main/profiles).
 
@@ -39,6 +63,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 The following install options are supported:
 - build/don't build the unit tests: `--conf=tools.build:skip_test=[True|False(default)]`
 - enable/disable i8080 arcade support: `--options=with_i8080_arcade=[True|False(default)]`
+- enable/disable rp2040 support: `--options=with_rp2040=[True|False(default)]`
 
 The following will enable i8080 arcade support: `conan install . --build=missing --options=with_i8080_arcade=True`
 
@@ -68,24 +93,33 @@ When running a cross compiled build the binaries need to be uploaded to the host
 5. Change directory to space-invaders `cd meen-hw`.
 6. Run the unit tests: `./run-meen_hw-tests.sh`.<br>
 
+**RP2040 (armv6-m)**
+
+# TODO: document running from the rp2040 microcontroller
+
 #### Building a binary development package
 
-A standalone binary development package can be built via CPack that can be distributed and installed.
+A standalone binary package can be built via `cpack` that can be distributed and installed:
 
-- `cpack --config build\CPackConfig.cmake`
+- `cmake --build --preset conan-release --target=meen-hw-pkg`
 
-This will build a package using the default generator.
-The underlying package generator used to build the package must be installed otherwise this command will fail.
+The `meen-hw-pkg` target defined in the root CMakeLists.txt will build a tar gzipped package via the following cpack command:
 
-NOTE: the `-G` option can be specifed to overwrite the default cpack generator.
+- `cpack --config build\CPackConfig.cmake -C ${build_type} -G TGZ`
 
-- `cpack --config build\CPackConfig.cmake -G ZIP`
+The underlying package generator used to build the package (in this case `tar`) must be installed otherwise this command will fail.
 
-This will build a binary package using the zip utility.
+**NOTE**: the `-G` option can be specifed to overwrite the default `TGZ` cpack generator if a different packaging method is desired:
+
+- `cpack --config build\CPackConfig.cmake -C ${build_type} -G ZIP`
+
+This will build a binary package using the `zip` utility.
 
 Run `cpack --help` for a list available generators.
 
-When the package has been built with unit tests enabled it will contain a script called `run-meen_hw-unit-tests` which can be used to test the development package:
+The `meen-hw-pkg` target will also strip all binary files where applicable and will also perform static analysis of the source code via `cppcheck`.
+
+For non rp2040 distrubutions the package will contain a script in the root directory called `run-meen_hw-unit-tests` when the unit tests are enabled which can be used to test the development package:
 - `./run-meen_hw-unit-tests.sh [--gtest_filter ${gtest_filter}]`.
 - `start run-meen_hw-unit-tests.bat [--gtest_filter ${gtest_filter}]`.
 
