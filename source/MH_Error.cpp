@@ -20,27 +20,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "meen_hw/MH_Factory.h"
-
-#ifdef ENABLE_MH_I8080ARCADE
-	#include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
-#endif
+#include "meen_hw/MH_Error.h"
 
 namespace meen_hw
 {
-	//cppcheck-suppress unusedFunction
-	const char* Version()
+	namespace detail
 	{
-		return MEEN_HW_VERSION;
-	}
+		class category : public std::error_category
+		{
+		public:
+			//cppcheck-suppress unusedFunction
+			virtual const char* name() const noexcept override
+			{
+				return "meen_hw::category";
+			}
+
+			//cppcheck-suppress unusedFunction
+			virtual std::string message(int ec) const override
+			{
+				switch(ec)
+				{
+					case errc::no_error:
+						return "Success";
+					case errc::bpp:
+						return "The bpp configuration option is invalid";
+					case errc::colour:
+						return "The colour configuration option is invalid";
+					case errc::orientation:
+						return "The orientation configuration parameter is invalid";
+					case errc::json_parse:
+						return "A json parse error occurred while processing the configuration file";
+					default:
+						return "Unknown error code";
+				}
+			}
+		};
+	} // namespace detail
 
 	//cppcheck-suppress unusedFunction
-	std::unique_ptr<MH_II8080ArcadeIO> MakeI8080ArcadeIO()
+	const std::error_category& category()
 	{
-#ifdef ENABLE_MH_I8080ARCADE
-		return std::make_unique<i8080_arcade::MH_I8080ArcadeIO>();
-#else
-		return nullptr;
-#endif
+		static detail::category instance;
+		return instance;
 	}
 } // namespace meen_hw

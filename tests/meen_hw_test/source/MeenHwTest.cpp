@@ -244,11 +244,20 @@ namespace meen_hw::tests
 
 	TEST_F(MeenHwTest, SetOptions)
 	{
-		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"bpp\":2}"), std::invalid_argument);
-		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"colour\":\"black\" }"), std::invalid_argument);
-		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"orientation\":\"up\"}"), std::invalid_argument);
-		EXPECT_THROW(i8080ArcadeIO_->SetOptions("{\"invalid-option\":1}"), std::invalid_argument);
-		EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions("{\"bpp\":8,\"colour\":\"random\",\"orientation\":\"cocktail\"}"));
+		auto checkErrc = [](const std::error_code& ec, bool success, const char* expectedMsg)
+		{
+			if (success == true) EXPECT_FALSE(ec); else EXPECT_TRUE(ec);
+			EXPECT_EQ(expectedMsg, ec.message());
+		};
+		
+		EXPECT_NO_THROW
+		(
+			checkErrc(i8080ArcadeIO_->SetOptions("{\"bpp\":2}"), false, "The bpp configuration option is invalid");
+			checkErrc(i8080ArcadeIO_->SetOptions("{\"colour\":\"black\" }"), false, "The colour configuration option is invalid");
+			checkErrc(i8080ArcadeIO_->SetOptions("{\"orientation\":\"up\"}"), false, "The orientation configuration parameter is invalid");
+			checkErrc(i8080ArcadeIO_->SetOptions("syntax-error"), false, "A json parse error occurred while processing the configuration file");
+			checkErrc(i8080ArcadeIO_->SetOptions("{\"bpp\":8,\"colour\":\"random\",\"orientation\":\"cocktail\"}"), true, "Success");
+		);
 	}
 
 	TEST_F(MeenHwTest, GetVRAMDimensions)

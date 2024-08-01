@@ -28,6 +28,8 @@ SOFTWARE.
 
 #include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
 
+#include "meen_hw/MH_Error.h"
+
 namespace meen_hw::i8080_arcade
 {
 	uint8_t MH_I8080ArcadeIO::ReadPort(uint16_t port)
@@ -228,14 +230,21 @@ namespace meen_hw::i8080_arcade
 			}
 			default:
 			{
-				throw std::runtime_error("Invalid blit mode");
+				// todo: log invalid blit mode
+				assert(blitMode_ == BltFlags::Upright || blitMode_ == BltFlags::Native || blitMode_ == BlitFlags::Rgb332 || blitMode_ == BlitFlags::Upright8bpp);
 			}
 		}
 	}
 
-	void MH_I8080ArcadeIO::SetOptions(const char* jsonOptions)
+	std::error_code MH_I8080ArcadeIO::SetOptions(const char* jsonOptions)
 	{
-		auto options = nlohmann::json::parse(jsonOptions);
+		auto err = meen_hw::make_error_code(errc::no_error);
+		auto options = nlohmann::json::parse(jsonOptions, nullptr, false);
+
+		if(options.is_discarded() == true)
+		{
+			return meen_hw::make_error_code(errc::json_parse);
+		}
 
 		for (const auto& [key, val] : options.items())
 		{
@@ -255,7 +264,7 @@ namespace meen_hw::i8080_arcade
 					}
 					default:
 					{
-						throw std::invalid_argument("Invalid configuration: bpp");
+						err = meen_hw::make_error_code(errc::bpp);
 					}
 				}
 			}
@@ -289,13 +298,13 @@ namespace meen_hw::i8080_arcade
 					}
 					else
 					{
-						throw std::invalid_argument("Invalid configuration: colour");
+						err = meen_hw::make_error_code(errc::colour);
 					}
 				}
 				else if (*ptr != '\0')
 				{
 					// we parsed something but there is still left over text
-					throw std::invalid_argument("Invalid configuration: colour");
+					err = meen_hw::make_error_code(errc::colour);
 				}
 			}
 			else if(key == "orientation")
@@ -312,14 +321,16 @@ namespace meen_hw::i8080_arcade
 				}
 				else
 				{
-					throw std::invalid_argument("Invalid configuration: orientation");
+					err = meen_hw::make_error_code(errc::orientation);
 				}
 			}
 			else
 			{
-				throw std::invalid_argument("Invalid configuration option");
+				//todo: log unknown option
 			}
 		}
+
+		return err;
 	}
 
 	int MH_I8080ArcadeIO::GetVRAMWidth() const

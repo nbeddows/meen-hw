@@ -65,7 +65,11 @@ find_package(nlohmann_json REQUIRED)
 #    find_package(pybind11 REQUIRED)
 #endif()
 
-set (${lib_name}_include_files
+set (${lib_name}_private_include_files
+	${include_dir}/${lib_name}/MH_Error.h
+)
+
+set (${lib_name}_public_include_files
 	${include_dir}/${lib_name}/MH_Factory.h
 	${include_dir}/${lib_name}/MH_II8080ArcadeIO.h
 	${include_dir}/${lib_name}/MH_ResourcePool.h
@@ -92,6 +96,7 @@ if(MSVC)
 endif()
 
 set (${lib_name}_source_files
+	${source_dir}/MH_Error.cpp
 	${source_dir}/MH_Factory.cpp
 )
 
@@ -108,12 +113,13 @@ if(enable_i8080_arcade STREQUAL ON)
   SOURCE_GROUP(i8080_arcade/${source_dir} FILES ${${lib_name}_i8080_arcade_source_files})
 endif()
 
-SOURCE_GROUP(meen_hw/${include_dir} FILES ${${lib_name}_include_files})
-SOURCE_GROUP(meen_hw/${resource_dir} FILES ${${lib_name}_resource_files})
-SOURCE_GROUP(meen_hw/${source_dir} FILES ${${lib_name}_source_files})
+SOURCE_GROUP(${lib_name}/${include_dir} FILES ${${lib_name}_private_include_files} ${${lib_name}_public_include_files})
+SOURCE_GROUP(${lib_name}/${resource_dir} FILES ${${lib_name}_resource_files})
+SOURCE_GROUP(${lib_name}/${source_dir} FILES ${${lib_name}_source_files})
 
 add_library(${lib_name} ${lib_type}
-  ${${lib_name}_include_files}
+  ${${lib_name}_private_include_files}
+  ${${lib_name}_public_include_files}
   ${${lib_name}_resource_files}
   ${${lib_name}_source_files}
   ${${lib_name}_i8080_arcade_include_files}
@@ -127,9 +133,14 @@ target_compile_definitions(${lib_name} PRIVATE
 )
 
 if(enable_i8080_arcade STREQUAL ON)
-  target_compile_definitions(${lib_name} PRIVATE
-    ENABLE_MH_I8080ARCADE
-  )
+  target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_I8080ARCADE)
+endif()
+
+if(enable_rp2040 STREQUAL ON)
+  target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_RP2040)
+  target_compile_options(${lib_name} PUBLIC -fno-exceptions)
+  # this emits warnings when compiling the rp2040 source rightfully stating that it is not valid for C code, so we make it private
+  target_compile_options(${lib_name} PRIVATE -fno-rtti)
 endif()
 
 target_include_directories(${lib_name} PRIVATE
@@ -143,13 +154,14 @@ target_link_libraries(${lib_name} PRIVATE
 )
 
 if (NOT BUILD_TESTING STREQUAL OFF)
-  add_subdirectory(tests/meen_hw_test)
+  add_subdirectory(tests/${lib_name}_test)
 endif()
 
 set(CMAKE_INSTALL_PREFIX ./)
+set(CPACK_PACKAGE_FILE_NAME ${lib_name}-v${CMAKE_PROJECT_VERSION}-${CMAKE_SYSTEM}-${CMAKE_SYSTEM_PROCESSOR}-${runtime_dir})
 
 target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
-  ${${lib_name}_include_files}
+  ${${lib_name}_public_include_files}
 )
 
 install(TARGETS ${lib_name} FILE_SET HEADERS)
