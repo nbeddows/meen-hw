@@ -41,12 +41,12 @@ namespace meen_hw::tests
 	static void suiteSetUp()
     {
 		i8080ArcadeIO = MakeI8080ArcadeIO();
-	
+
 #ifdef ENABLE_MH_I8080ARCADE
 		TEST_ASSERT_NOT_NULL(i8080ArcadeIO);
 #else
 		TEST_ASSERT_NULL(i8080ArcadeIO);
-#endif	
+#endif
 	}
 
 	static int suiteTearDown(int numFailures)
@@ -117,7 +117,7 @@ namespace meen_hw::tests
 			TEST_ASSERT_NOT_NULL(outlivePool);
 			*outlivePool = 42;
 		}
-		
+
 		// The pool is dead, resource should be valid
 		TEST_ASSERT_EQUAL(42, *outlivePool);
 		// The pool is dead, the resource should be destroyed
@@ -168,7 +168,7 @@ namespace meen_hw::tests
 			TEST_ASSERT_EQUAL_UINT8(0x00, value);
 			// Try to play audio sound effects 2 and 3
 			value = i8080ArcadeIO->WritePort(port, 0x06);
-			// We should get the audio sound effect 2 but not 3 
+			// We should get the audio sound effect 2 but not 3
 			TEST_ASSERT_EQUAL_UINT8(0x02, value);
 			// Don't play any audio sound effects
 			value = i8080ArcadeIO->WritePort(port, 0x00);
@@ -196,7 +196,7 @@ namespace meen_hw::tests
 		TEST_ASSERT_EQUAL_UINT8(0x00, value);
 	}
 
-		// This tests port 2 and 4 writes and port 3 reads (shifting register)
+	// This tests port 2 and 4 writes and port 3 reads (shifting register)
 	void test_ShiftRegister()
 	{
 		// Write bytes 0xFF and 0x00 into port 4 to store the 16bit value 0x00FF
@@ -220,7 +220,7 @@ namespace meen_hw::tests
 		}
 	}
 
-		// Cycle through interrupts 1 and 2 when the clock changes
+	// Cycle through interrupts 1 and 2 when the clock changes
 	// Return no interrupt when the clock does not change
 	void test_GenerateInterrupt()
 	{
@@ -275,34 +275,7 @@ namespace meen_hw::tests
 	void test_BlitVRAM()
 	{
 		uint8_t srcVRAM[7168]; // 7168 - width * height @ 1bpp
-		uint8_t expectedVRAMUpright1[7168]; // 57344 - width * height @ 1pp
-		uint8_t expectedVRAMCocktail8[57344]; // 57344 - width * height @ 8pp
-		uint8_t expectedVRAMUpright8[57344]; // 57344 - width * height @ 8pp
-
-		// We need to output white (0xFF) in the uncompressed case
-		TEST_ASSERT_FALSE(i8080ArcadeIO->SetOptions("{\"colour\":\"white\"}"));
-
-		// Set the src vram to be blitted to be an alternating black and white scanline pattern
-		// This will act as the expectedVRAM for 1bpp native orientation test
-		for (auto data = srcVRAM; data < srcVRAM + 7168; data += 64)
-		{
-			// 32 - compressed row bytes
-			std::fill_n(data, 32, 0x00);
-			std::fill_n(data + 32, 32, 0xFF);
-		}
-
-		// Vertical black and white bars
-		std::fill(expectedVRAMUpright1, expectedVRAMUpright1 + 7168, 0xAA);
-
-		for (auto data = expectedVRAMCocktail8; data < expectedVRAMCocktail8 + 57344; data += 512)
-		{
-			// 256 - uncompressed row bytes
-			std::fill_n(data, 256, 0x00);
-			std::fill_n(data + 256, 256, 0xFF);
-		}
-
-		auto data = expectedVRAMUpright8;
-		std::fill_n(std::bit_cast<uint16_t*>(data), 28672, 0xFF00);
+		uint8_t expectedVRAM[57344]; // 57344 - width * height @ 8pp
 
 		auto checkVRAM = [](std::span<uint8_t> VRAMToBlit, std::span<uint8_t> expectedVRAM, int expectedRowBytes, int padding, int compressed, const char* options)
 		{
@@ -317,32 +290,56 @@ namespace meen_hw::tests
 			auto actual = dstVRAM.data();
 			while(expected < expectedVRAM.data() + expectedVRAM.size())
 			{
-				//EXPECT_EQ(0, memcmp(actual, expected, expectedRowBytes));
 				TEST_ASSERT_EQUAL_MEMORY(expected, actual, expectedRowBytes);
 				actual += actualRowBytes;
 				expected += expectedRowBytes;
 			}
 		};
 
+		// We need to output white (0xFF) in the uncompressed case
+		TEST_ASSERT_FALSE(i8080ArcadeIO->SetOptions("{\"colour\":\"white\"}"));
+
+		// Set the src vram to be blitted to be an alternating black and white scanline pattern
+		// This will act as the expectedVRAM for 1bpp native orientation test
+		for (auto data = srcVRAM; data < srcVRAM + 7168; data += 64)
+		{
+			// 32 - compressed row bytes
+			std::fill_n(data, 32, 0x00);
+			std::fill_n(data + 32, 32, 0xFF);
+		}
+
 		// Native blit without padding
 		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 0, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
 		// Native blit with padding
 		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 2, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
 
-		// Native orientation 8pp blit without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMCocktail8), 256, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
-		// Native orientation 8pp blit with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMCocktail8), 256, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		// Vertical black and white bars
+		std::fill(expectedVRAM, expectedVRAM + 7168, 0xAA);
 
 		// Native bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright1), 28, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
 		// Native bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright1), 28, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+
+		for (auto data = expectedVRAM; data < expectedVRAM + 57344; data += 512)
+		{
+			// 256 - uncompressed row bytes
+			std::fill_n(data, 256, 0x00);
+			std::fill_n(data + 256, 256, 0xFF);
+		}
+		
+		// Native orientation 8pp blit without padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		// Native orientation 8pp blit with padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+
+		auto data = expectedVRAM;
+		std::fill_n(std::bit_cast<uint16_t*>(data), 28672, 0xFF00);
 
 		// 8 bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright8), 224, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 		// 8 bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAMUpright8), 224, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 	}
 #endif
 } // namespace meen_hw::tests
@@ -360,7 +357,6 @@ int main(void)
 		UNITY_BEGIN();
 		RUN_TEST(meen_hw::tests::test_Version);
 		RUN_TEST(meen_hw::tests::test_ResourcePool);
-		
 #ifdef ENABLE_MH_I8080ARCADE
 		RUN_TEST(meen_hw::tests::test_ReadPort0);
 		RUN_TEST(meen_hw::tests::test_WriteAudioPorts);
