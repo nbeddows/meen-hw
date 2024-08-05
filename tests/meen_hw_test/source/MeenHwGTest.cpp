@@ -33,7 +33,7 @@ namespace meen_hw::tests
 	class MeenHwTest : public testing::Test
 	{
 	protected:
-		static std::unique_ptr<MH_II8080ArcadeIO> i8080ArcadeIO_; 
+		static std::unique_ptr<MH_II8080ArcadeIO> i8080ArcadeIO_;
 	public:
 		static void SetUpTestCase();
 	};
@@ -52,11 +52,11 @@ namespace meen_hw::tests
 
 	TEST_F(MeenHwTest, Version)
 	{
-		EXPECT_NE(nullptr, Version());	
+		EXPECT_NE(nullptr, Version());
 	}
 
 	TEST_F(MeenHwTest, ResourcePool)
-	{		
+	{
 		static int counter = 0;
 
 		struct ResourceDeleter
@@ -113,7 +113,7 @@ namespace meen_hw::tests
 			ASSERT_NE(nullptr, outlivePool);
 			*outlivePool = 42;
 		}
-		
+
 		// The pool is dead, resource should be valid
 		EXPECT_EQ(42, *outlivePool);
 		// The pool is dead, the resource should be destroyed
@@ -156,7 +156,7 @@ namespace meen_hw::tests
 			EXPECT_EQ(0x00, value);
 			// Try to play audio sound effects 2 and 3
 			value = i8080ArcadeIO_->WritePort(port, 0x06);
-			// We should get audio sound effect 3 but not 2 
+			// We should get audio sound effect 3 but not 2
 			EXPECT_EQ(0x04, value);
 			// Try to play audio sound effect 3 (note this does not include 2)
 			value = i8080ArcadeIO_->WritePort(port, 0x04);
@@ -249,7 +249,7 @@ namespace meen_hw::tests
 			if (success == true) EXPECT_FALSE(ec); else EXPECT_TRUE(ec);
 			EXPECT_EQ(expectedMsg, ec.message());
 		};
-		
+
 		EXPECT_NO_THROW
 		(
 			checkErrc(i8080ArcadeIO_->SetOptions("{\"bpp\":2}"), false, "The bpp configuration option is invalid");
@@ -277,7 +277,7 @@ namespace meen_hw::tests
 		uint8_t expectedVRAMUpright1[7168]; // 57344 - width * height @ 1pp
 		uint8_t expectedVRAMCocktail8[57344]; // 57344 - width * height @ 8pp
 		uint8_t expectedVRAMUpright8[57344]; // 57344 - width * height @ 8pp
-		
+
 		// We need to output white (0xFF) in the uncompressed case
 		i8080ArcadeIO_->SetOptions("{\"colour\":\"white\"}");
 

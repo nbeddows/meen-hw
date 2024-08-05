@@ -42,6 +42,9 @@ target_link_libraries(${exe_name} PRIVATE
 install(TARGETS ${exe_name} RUNTIME)
 
 if(enable_rp2040 STREQUAL ON)
+  pico_enable_stdio_usb(${exe_name} 1)
+  pico_enable_stdio_uart(${exe_name} 0)
+  pico_set_program_url(${exe_name} "https://github.com/neddows/meen-hw")
   pico_add_extra_outputs(${exe_name})
   install(PROGRAMS ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.bin DESTINATION ./bin)
   install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.dis DESTINATION ./lib)

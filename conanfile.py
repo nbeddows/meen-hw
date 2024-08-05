@@ -25,6 +25,7 @@ class MeenHwRecipe(ConanFile):
     exports_sources = "CMakeLists.txt",\
         "LICENSE",\
         "README.md",\
+        "pico_sdk_import.cmake",\
         "include/*",\
         "resource/*",\
         "source/*",\

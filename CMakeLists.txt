@@ -28,8 +28,6 @@ set(minor 1)
 set(bugfix 0)
 
 if(enable_rp2040 STREQUAL ON)
-  set(CMAKE_C_COMPILER_WORKS 1)
-  set(CMAKE_CXX_COMPILER_WORKS 1)
   include (pico_sdk_import.cmake)
 endif()
 
