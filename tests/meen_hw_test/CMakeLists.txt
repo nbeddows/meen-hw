@@ -21,12 +21,12 @@
 set(exe_name meen_hw_test)
 
 if(enable_rp2040 STREQUAL ON)
-  set(${exe_name}_source_files ${source_dir}/MeenHwTestRp2040.cpp)
-  set(${exe_name}_deps pico_stdlib)
+  find_package(Unity REQUIRED)
+  set(${exe_name}_source_files ${source_dir}/MeenHwUnityTest.cpp)
+  set(${exe_name}_deps pico_stdlib unity::unity)
 else()
   find_package(GTest REQUIRED)
-
-  set(${exe_name}_source_files ${source_dir}/MeenHwTest.cpp)
+  set(${exe_name}_source_files ${source_dir}/MeenHwGTest.cpp)
   set(${exe_name}_deps GTest::GTest)
 endif()
 

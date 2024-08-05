@@ -37,8 +37,11 @@ class MeenHwRecipe(ConanFile):
                 self.requires("pybind11/2.12.0")
 
     def build_requirements(self):
-        if not self.conf.get("tools.build:skip_test", default=False) and not self.options.with_rp2040:
-            self.test_requires("gtest/1.14.0")
+        if not self.conf.get("tools.build:skip_test", default=False):
+            if self.options.with_rp2040:
+                self.test_requires("unity/2.6.0")
+            else:
+                self.test_requires("gtest/1.14.0")
 
     def config_options(self):
         if self.settings.os == "Windows":

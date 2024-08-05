@@ -173,7 +173,7 @@ endif()
 if(enable_rp2040 STREQUAL ON)
   target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_RP2040)
   target_compile_options(${lib_name} PUBLIC -fno-exceptions)
-  target_compile_options(${lib_name} PRIVATE -fno-rtti)
+  # target_compile_options(${lib_name} PRIVATE -fno-rtti)
 endif()
 
 target_include_directories(${lib_name} PRIVATE
