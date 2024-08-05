@@ -34,6 +34,7 @@ void tearDown(){}
 namespace meen_hw::tests
 {
 	static std::unique_ptr<MH_II8080ArcadeIO> i8080ArcadeIO;
+	static int resourceCounter = 0;
 
 	static void suiteSetUp()
     {
@@ -52,13 +53,13 @@ namespace meen_hw::tests
 
 	static void test_ResourcePool()
 	{
-		static int counter = 0;
+		resourceCounter = 0;
 
 		struct ResourceDeleter
 		{
 			void operator()(int*)
 			{
-				counter++;
+				resourceCounter++;
 			};
 		};
 
@@ -115,7 +116,7 @@ namespace meen_hw::tests
 		outlivePool = nullptr;
 
 		//Check to total number of deletions
-		TEST_ASSERT_EQUAL(3, counter);
+		TEST_ASSERT_EQUAL(3, resourceCounter);
 	}
 } // namespace meen_hw::tests
 
