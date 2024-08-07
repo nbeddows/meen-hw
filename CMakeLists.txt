@@ -28,7 +28,7 @@ set(minor 1)
 set(bugfix 0)
 
 if(enable_rp2040 STREQUAL ON)
-  include (pico_sdk_import.cmake)
+  include ($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 endif()
 
 project(${lib_name} VERSION ${major}.${minor}.${bugfix} LANGUAGES C CXX ASM)
