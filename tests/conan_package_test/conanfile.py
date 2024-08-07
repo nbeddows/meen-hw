@@ -25,7 +25,7 @@ class MH_PackageTestReceipe(ConanFile):
         #    if self.dependencies["meen_hw"].options.shared:
         #        tc.variables["artifactsDir"] = self.dependencies["meen_hw"].cpp_info.bindirs[0].replace("\\", "/")
         #    tc.variables["MH_PackageTest"] = True
-
+        tc.cache_variables["enable_rp2040"] = self.dependencies["meen_hw"].options.get_safe("with_rp2040", False)
         tc.generate()
 
     def layout(self):
