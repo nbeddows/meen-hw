@@ -32,22 +32,32 @@ class MeenHwRecipe(ConanFile):
 
     def requirements(self):
         self.requires("nlohmann_json/3.11.3")
-        if self.options.with_python:
-            if "arm" not in self.settings.arch:
-                self.requires("pybind11/2.12.0")
+        if self.options.get_safe("with_python", False):
+            self.requires("pybind11/2.12.0")
 
     def build_requirements(self):
-        if not self.conf.get("tools.build:skip_test", default=False) and not self.options.with_rp2040:
-            self.test_requires("gtest/1.14.0")
+        if not self.conf.get("tools.build:skip_test", default=False):
+            if self.options.get_safe("with_rp2040", False):
+                self.test_requires("unity/2.6.0")
+            else:
+                self.test_requires("gtest/1.14.0")
 
     def config_options(self):
         if self.settings.os == "Windows":
             self.options.rm_safe("fPIC")
+            # Currently not supported (maybe in the future)
+            self.options.rm_safe("with_rp2040")
+            if "arm" in self.settings.arch:
+                self.output.error("Compiling for ARM under Windows OS is currently not supported, use Linux OS")
 
+        if "arm" in self.settings.arch:
+            self.options.rm_safe("with_python")
+    
     def configure(self):
         if self.options.shared:
             self.options.rm_safe("fPIC")
-
+            self.options.rm_safe("with_rp2040")
+ 
     def layout(self):
         cmake_layout(self)
 
@@ -55,19 +65,9 @@ class MeenHwRecipe(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-
-        if self.options.shared and self.options.with_rp2040 == True:
-            self.output.error("Shared library output not supported")
-        if "arm" in self.settings.arch:
-            if self.settings.os == "Windows":
-                self.output.error("Compiling for ARM under Windows OS is currently not supported, use Linux OS")
-            if self.options.with_python:
-                self.output.warning("Python not available on ARM platforms, disabling")
-            tc.cache_variables["enable_python_module"] = False
-        else:
-            tc.cache_variables["enable_python_module"] = self.options.with_python
+        tc.cache_variables["enable_python_module"] = self.options.get_safe("with_python", False)
         tc.cache_variables["enable_i8080_arcade"] = self.options.with_i8080_arcade
-        tc.cache_variables["enable_rp2040"] = self.options.with_rp2040
+        tc.cache_variables["enable_rp2040"] = self.options.get_safe("with_rp2040", False)
         tc.variables["build_arch"] = self.settings.arch
         tc.variables["archive_dir"] = self.cpp_info.libdirs[0]
         tc.variables["runtime_dir"] = self.cpp_info.bindirs[0]

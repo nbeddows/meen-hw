@@ -28,9 +28,7 @@ set(minor 1)
 set(bugfix 0)
 
 if(enable_rp2040 STREQUAL ON)
-  set(CMAKE_C_COMPILER_WORKS 1)
-  set(CMAKE_CXX_COMPILER_WORKS 1)
-  include (pico_sdk_import.cmake)
+  include ($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 endif()
 
 project(${lib_name} VERSION ${major}.${minor}.${bugfix} LANGUAGES C CXX ASM)
@@ -173,7 +171,7 @@ endif()
 if(enable_rp2040 STREQUAL ON)
   target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_RP2040)
   target_compile_options(${lib_name} PUBLIC -fno-exceptions)
-  target_compile_options(${lib_name} PRIVATE -fno-rtti)
+  # target_compile_options(${lib_name} PRIVATE -fno-rtti)
 endif()
 
 target_include_directories(${lib_name} PRIVATE

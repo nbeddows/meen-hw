@@ -140,7 +140,7 @@ namespace meen_hw::i8080_arcade
 				shift = ++shift & 0x07;
 				//Move to the next vram byte if we have done a full cycle.
 				vramStart += shift == 0;
-			
+
 				if(cocktail == true)
 				{
 					if (++ptr - nextCol >= 256)
@@ -193,7 +193,7 @@ namespace meen_hw::i8080_arcade
 
 					// Since we sample 8 vertical pixels we need to skip another 7 rows when we get to the end of the current row.
 					// TODO: mem pool frames need to be 32 bit aligned, then we don't have to subtract src, ie; just for (begin & (width_ - 1)) == 0
-					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);				
+					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);
 				}
 				break;
 			}
@@ -265,6 +265,7 @@ namespace meen_hw::i8080_arcade
 					default:
 					{
 						err = meen_hw::make_error_code(errc::bpp);
+						break;
 					}
 				}
 			}
