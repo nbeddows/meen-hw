@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set(exe_name meen_hw_test)
+set(exe_name ${lib_name}_test)
 
 if(enable_rp2040 STREQUAL ON)
   find_package(Unity REQUIRED)
@@ -34,6 +34,7 @@ SOURCE_GROUP("Source" FILES ${${exe_name}_source_files})
 
 add_executable(${exe_name} ${${exe_name}_source_files})
 
+set_target_properties(${exe_name} PROPERTIES FOLDER tests)
 target_link_libraries(${exe_name} PRIVATE
   ${${exe_name}_deps}
   ${lib_name}
@@ -47,13 +48,12 @@ if(enable_rp2040 STREQUAL ON)
   pico_set_program_url(${exe_name} "https://github.com/neddows/meen-hw")
   pico_add_extra_outputs(${exe_name})
   install(PROGRAMS ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.bin DESTINATION ./bin)
+  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.uf2 DESTINATION ./bin)
   install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.dis DESTINATION ./lib)
   install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.elf.map DESTINATION ./lib)
   install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.hex DESTINATION ./lib)
-  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.uf2 DESTINATION ./lib)
 else()
   if(DEFINED WIN32)
-    set(soExt .dll)
     set(scriptExt .bat)
 
     file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
@@ -64,7 +64,6 @@ pause\n\
 exit"
   )
   else()
-    set(soExt .so)
     set(scriptExt .sh)
 
     file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
