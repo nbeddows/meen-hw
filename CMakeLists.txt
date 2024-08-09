@@ -32,6 +32,7 @@ if(enable_rp2040 STREQUAL ON)
 endif()
 
 project(${lib_name} VERSION ${major}.${minor}.${bugfix} LANGUAGES C CXX ASM)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if(enable_rp2040 STREQUAL ON)
   add_executable(Pioasm IMPORTED)
@@ -189,10 +190,11 @@ if (NOT BUILD_TESTING STREQUAL OFF)
 endif()
 
 set(CMAKE_INSTALL_PREFIX ./)
-set(CPACK_PACKAGE_FILE_NAME ${lib_name}-v${CMAKE_PROJECT_VERSION}-${CMAKE_SYSTEM}-${CMAKE_SYSTEM_PROCESSOR}-${runtime_dir})
+set(CPACK_PACKAGE_FILE_NAME ${lib_name}-v${CMAKE_PROJECT_VERSION}-${CMAKE_SYSTEM}-${build_arch}-${runtime_dir})
+set(CPACK_GENERATOR TGZ)
 
 if(DEFINED CMAKE_STRIP)
-  set(STRIP_PKG
+  add_custom_target(${lib_name}_strip_pkg
     COMMAND ${CMAKE_COMMAND} -E tar -xzf ${CPACK_PACKAGE_FILE_NAME}.tar.gz
     COMMAND ${CMAKE_STRIP} -s ${CPACK_PACKAGE_FILE_NAME}/${runtime_dir}/${lib_name}_test
     COMMAND ${CMAKE_STRIP} -s ${CPACK_PACKAGE_FILE_NAME}/${archive_dir}/lib${lib_name}.${ext}
@@ -201,18 +203,12 @@ if(DEFINED CMAKE_STRIP)
   )
 endif()
 
-add_custom_target(${lib_name}_pkg
-  #todo: add doxygen COMMAND
-  COMMAND cppcheck -i build -i _CPack_Packages -i tests --inline-suppr --enable=warning,style,performance,portability,unusedFunction --std=c++20 ${CMAKE_SOURCE_DIR}
-  COMMAND cpack --config ${CMAKE_BINARY_DIR}/CPackConfig.cmake -C ${build_type} -G TGZ
-  ${STRIP_PKG}
-)
+target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES ${${lib_name}_public_include_files})
 
-target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES
-  ${${lib_name}_public_include_files}
-)
-
+#install(CODE "execute_process(COMMAND doxygen ${CMAKE_SOURCE_DIR}/docs/Doxyfile)")
+install(CODE "execute_process(COMMAND cppcheck -ibuild -i_CPack_Packages -itests --check-level=exhaustive --inline-suppr --enable=warning,style,performance,portability,unusedFunction --std=c++20 ${CMAKE_SOURCE_DIR})")
 install(TARGETS ${lib_name} FILE_SET HEADERS)
+install(FILES CHANGELOG.md DESTINATION .)
 install(FILES LICENSE DESTINATION .)
 install(FILES README.md DESTINATION .)
 
