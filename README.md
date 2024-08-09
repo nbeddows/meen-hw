@@ -8,7 +8,7 @@ Supported hardwares:
 
 ### Compilation
 
-This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its build system and [Conan (minimum version 2.0)](https://conan.io/) for it's dependency package management. Supported compilers are GCC (minimum version 12), MSVC(minimum version 16) and Clang (minimum version 16).
+This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its build system and [Conan (minimum version 2.0)](https://conan.io/) for it's dependency package management. Supported compilers are GCC (minimum version 12), MSVC(minimum version 16) and Clang (minimum version 16). The platform used for compilation is assumed to be Windows/Linux x86_64.
 
 #### Pre-requisites
 
@@ -26,7 +26,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
     - `git clone https://github.com/raspberrypi/pico-sdk.git`
     - `cd pico-sdk`
     - `git submodule update --init`
-    - build the Raspberry Pi SDK:
+    - build the Raspberry Pi Pico SDK:
       - Conan and the Raspberry Pi Pico Sdk seem to have an issue with conflicting use of the cmake toolchain file
         which results in test programs not being able to be compiled during the conan build process as outlined [here](https://github.com/raspberrypi/pico-sdk/issues/1693).
         At this point we need to build the sdk so that we have the required tools pre-built so the Conan build process will succeed:
@@ -87,24 +87,41 @@ The following dependent packages will be installed if required:
 
 When running a cross compiled build the binaries need to be uploaded to the host machine before they can be executed.
 1. Create an Arm Linux binary distribution: see building a binary development package. 
-2. Copy the distribution to the arm machine: `scp build/Release/Sdk/meen-hw-v0.1.0-Linux-armv7hf-bin.tar.gz ${user}@raspberrypi:meen-hw-v0.1.0.tar.gz`.
+2. Copy the distribution to the arm machine: `scp build/Release/Sdk/meen-hw-v0.1.0-Linux-6.2.0-39-generic-armv7hf-bin.tar.gz ${user}@raspberrypi:meen-hw-v0.1.0.tar.gz`.
 3. Ssh into the arm machine: `ssh ${user}@raspberrypi`.
 4. Extract the meen-hw archive copied over via scp: `tar -xzf meen-hw-v0.1.0.tar.gz`.
-5. Change directory to space-invaders `cd meen-hw`.
+5. Change directory to meen-hw `cd meen-hw`.
 6. Run the unit tests: `./run-meen_hw-tests.sh`.<br>
 
 **RP2040 (armv6-m)**
 
-# TODO: document running from the rp2040 microcontroller
+When running a cross compiled build the binaries need to be uploaded to the host machine before they can be executed.
+This example will assume you are deploying the UF2 file from a Raspberry Pi.
+1. Create an Arm Linux binary distribution: see building a binary development package.
+2. Copy the distribution to the arm machine: `scp build/MinSizeRel/meen-hw-v0.1.0-Linux-6.2.0-39-generic-armv6-bin.tar.gz ${user}@raspberrypi:meen-hw-v0.1.0.tar.gz`.
+3. Ssh into the arm machine: `ssh ${user}@raspberrypi`.
+4. Extract the meen-hw archive copied over via scp: `tar -xzf meen-hw-v0.1.0.tar.gz`.
+5. Hold down the `bootsel` button on the pico and plug in the usb cable into the usb port of the Raspberry Pi then release the `bootsel` button.
+6. Echo the attached `/dev` device (this should show up as `sdb1` for example): `dmesg | tail`.
+7. Create a mount point (if not done already): `sudo mkdir /mnt/pico`.
+8. Mount the device: `sudo mount /dev/sdb1 /mnt/pico`. Run `ls /mnt/pico` to confirm it mounted.
+9. Copy the uf2 image to the pico: `cp meen-hw-v0.1.0-Linux-6.2.0-39-generic-armv6-bin/bin/meen_hw_test.uf2 /mnt/pico`
+10. You should see a new device `ttyACM0`: `ls /dev` to confirm.
+11. Install minicom (if not done already): `sudo apt install minicom`.
+12. Run minicom to see test output: `minicom -b 115200 -o -D /dev/ttyACM0`.
+    You should see the test output running at 1 second intervals.
+13. Quit minicom once done: `ctrl-a, x, enter`
+14. Unmount the device: `sudo umount /mnt/pico`.
 
 #### Building a binary development package
 
-A standalone binary package can be built via `cpack` that can be distributed and installed:
+A standalone binary package can be built via `package` target that can be distributed and installed:
 
-- `cmake --build --preset conan-release --target=meen-hw-pkg`
+- `cmake --build --preset conan-release --target=package`
 
-The `meen-hw-pkg` target defined in the root CMakeLists.txt will build a tar gzipped package via the following cpack command:
+This will also create doxygen generated documentation (todo) and perform static analysis.
 
+The `package` target as defined by the install targets in the root CMakeLists.txt will build a tar gzipped package which can be replicated by the following cpack command:
 - `cpack --config build\CPackConfig.cmake -C ${build_type} -G TGZ`
 
 The underlying package generator used to build the package (in this case `tar`) must be installed otherwise this command will fail.
@@ -117,7 +134,8 @@ This will build a binary package using the `zip` utility.
 
 Run `cpack --help` for a list available generators.
 
-The `meen-hw-pkg` target will also strip all binary files where applicable and will also perform static analysis of the source code via `cppcheck`.
+The final package can be stripped by running the mach_emu_strip_pkg target:
+- `cmake --build --preset conan-release --target=mach_emu_strip_pkg`.
 
 For non rp2040 distrubutions the package will contain a script in the root directory called `run-meen_hw-unit-tests` when the unit tests are enabled which can be used to test the development package:
 - `./run-meen_hw-unit-tests.sh [--gtest_filter ${gtest_filter}]`.
