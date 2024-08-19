@@ -25,8 +25,9 @@ SOFTWARE.
 
 #include <assert.h>
 #include <memory>
-#include <mutex>
 #include <list>
+
+#include "meen_hw/MH_Mutex.h"
 
 namespace meen_hw
 {
@@ -54,7 +55,7 @@ namespace meen_hw
         
             @remark     marked as mutable so GetResource can remain const
         */
-        mutable std::shared_ptr<std::mutex> resourceMutex_;
+        mutable std::shared_ptr<MH_Mutex> resourceMutex_;
 
         /** Resource pool
         
@@ -94,7 +95,7 @@ namespace meen_hw
 
                 @see    MH_ResourcePool::resourceMutex_
             */
-            std::weak_ptr<std::mutex> resourceMutex_;
+            std::weak_ptr<MH_Mutex> resourceMutex_;
 
             /** Resource deleter
             
@@ -117,7 +118,7 @@ namespace meen_hw
                 @param      resourcePool       The resource pool that desructed resources will be returned to.
                 @param      resourceMutex      The resource pool mutex that will be used for mutual exclusion.
             */
-            ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T, D>>>& resourcePool, const std::shared_ptr<std::mutex>& resourceMutex)
+            ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T, D>>>& resourcePool, const std::shared_ptr<MH_Mutex>& resourceMutex)
                 : resourcePool_(resourcePool)
                 , resourceMutex_{resourceMutex}
             {
@@ -138,7 +139,7 @@ namespace meen_hw
                     
                     if(resourceMutex)
                     {
-                        std::lock_guard<std::mutex> lg(*resourceMutex);
+                        MH_LockGuard lg(*resourceMutex);
                         resourcePool->emplace_back(std::unique_ptr<T, D>{resource});
                     }
                     else
@@ -172,7 +173,7 @@ namespace meen_hw
         */
         explicit MH_ResourcePool()
         {
-            resourceMutex_ = std::make_shared<std::mutex>();
+            resourceMutex_ = std::make_shared<MH_Mutex>();
             resourcePool_ = std::make_shared<std::list<std::unique_ptr<T, D>>>();
         }
 
@@ -185,7 +186,7 @@ namespace meen_hw
         */
         void AddResource(T* resource)
         {
-            std::lock_guard<std::mutex> lg(*resourceMutex_);
+            MH_LockGuard lg(*resourceMutex_);
             resourcePool_->emplace_back(std::unique_ptr<T, D>{resource});
         }
 

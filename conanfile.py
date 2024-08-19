@@ -5,7 +5,7 @@ import os
 
 class MeenHwRecipe(ConanFile):
     name = "meen_hw"
-    version = "0.1.0"
+    version = "0.2.0"
     package_type = "library"
     test_package_folder = "tests/conan_package_test"
 
@@ -23,6 +23,7 @@ class MeenHwRecipe(ConanFile):
 
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
+        "CHANGELOG.md",\
         "LICENSE",\
         "README.md",\
         "include/*",\
@@ -31,13 +32,19 @@ class MeenHwRecipe(ConanFile):
         "tests/meen_hw_test/*"
 
     def requirements(self):
-        self.requires("nlohmann_json/3.11.3")
+        # if any hardware has been set
+        if self.options.with_i8080_arcade:
+            if self.settings.os == "baremetal":
+                self.requires("arduinojson/7.0.1")
+            else:
+                self.requires("nlohmann_json/3.11.3")
+
         if self.options.get_safe("with_python", False):
             self.requires("pybind11/2.12.0")
 
     def build_requirements(self):
         if not self.conf.get("tools.build:skip_test", default=False):
-            if self.options.get_safe("with_rp2040", False):
+            if self.settings.os == "baremetal":
                 self.test_requires("unity/2.6.0")
             else:
                 self.test_requires("gtest/1.14.0")
@@ -49,15 +56,14 @@ class MeenHwRecipe(ConanFile):
             self.options.rm_safe("with_rp2040")
             if "arm" in self.settings.arch:
                 self.output.error("Compiling for ARM under Windows OS is currently not supported, use Linux OS")
-
-        if "arm" in self.settings.arch:
+        elif self.settings.os == "baremetal":
             self.options.rm_safe("with_python")
-    
+
     def configure(self):
         if self.options.shared:
             self.options.rm_safe("fPIC")
             self.options.rm_safe("with_rp2040")
- 
+
     def layout(self):
         cmake_layout(self)
 
@@ -68,6 +74,7 @@ class MeenHwRecipe(ConanFile):
         tc.cache_variables["enable_python_module"] = self.options.get_safe("with_python", False)
         tc.cache_variables["enable_i8080_arcade"] = self.options.with_i8080_arcade
         tc.cache_variables["enable_rp2040"] = self.options.get_safe("with_rp2040", False)
+        tc.variables["build_os"] = self.settings.os
         tc.variables["build_arch"] = self.settings.arch
         tc.variables["archive_dir"] = self.cpp_info.libdirs[0]
         tc.variables["runtime_dir"] = self.cpp_info.bindirs[0]
@@ -81,7 +88,7 @@ class MeenHwRecipe(ConanFile):
         if can_run(self) and not self.conf.get("tools.build:skip_test", default=False):
             testsDir = os.path.join(self.source_folder, "artifacts", str(self.settings.build_type), str(self.settings.arch), self.cpp_info.bindirs[0])
             self.run(os.path.join(testsDir, "meen_hw_test "))
-        #    if self.options.with_python:
+        #    if self.options.get_safe("with_python", False):
         #        cmd = os.path.join(self.source_folder, "tests/meen_hw/source/test_MeenHw.py -v ")
         #        self.run("python " + cmd)
 

@@ -18,42 +18,44 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set(exe_name meen_hw_test)
+set(exe_name ${lib_name}_test)
 
-if(enable_rp2040 STREQUAL ON)
+if(${build_os} STREQUAL "baremetal")
   find_package(Unity REQUIRED)
   set(${exe_name}_source_files ${source_dir}/MeenHwUnityTest.cpp)
-  set(${exe_name}_deps pico_stdlib unity::unity)
+  set(${exe_name}_deps unity::unity)
 else()
   find_package(GTest REQUIRED)
   set(${exe_name}_source_files ${source_dir}/MeenHwGTest.cpp)
   set(${exe_name}_deps GTest::GTest)
 endif()
 
+if(${enable_rp2040} STREQUAL ON)
+  set(${exe_name}_deps ${${exe_name}_deps} pico_stdlib)
+endif()
+
 SOURCE_GROUP("Source" FILES ${${exe_name}_source_files})
 
 add_executable(${exe_name} ${${exe_name}_source_files})
-
-target_link_libraries(${exe_name} PRIVATE
-  ${${exe_name}_deps}
-  ${lib_name}
-)
-
+set_target_properties(${exe_name} PROPERTIES FOLDER tests)
+target_link_libraries(${exe_name} PRIVATE ${${exe_name}_deps} ${lib_name})
 install(TARGETS ${exe_name} RUNTIME)
 
-if(enable_rp2040 STREQUAL ON)
-  pico_enable_stdio_usb(${exe_name} 1)
-  pico_enable_stdio_uart(${exe_name} 0)
-  pico_set_program_url(${exe_name} "https://github.com/neddows/meen-hw")
-  pico_add_extra_outputs(${exe_name})
-  install(PROGRAMS ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.bin DESTINATION ./bin)
-  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.dis DESTINATION ./lib)
-  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.elf.map DESTINATION ./lib)
-  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.hex DESTINATION ./lib)
-  install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.uf2 DESTINATION ./lib)
+if(${build_os} STREQUAL "baremetal")
+  if(${enable_rp2040} STREQUAL ON)
+    target_compile_definitions(${exe_name} PRIVATE ENABLE_MH_RP2040)
+    pico_enable_stdio_usb(${exe_name} 1)
+    pico_enable_stdio_uart(${exe_name} 0)
+    pico_set_program_url(${exe_name} "https://github.com/neddows/meen-hw")
+    pico_add_extra_outputs(${exe_name})
+    install(PROGRAMS ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.bin DESTINATION ./bin)
+    install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.uf2 DESTINATION ./bin)
+    install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.dis DESTINATION ./lib)
+    install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.elf.map DESTINATION ./lib)
+    install(FILES ${CMAKE_BINARY_DIR}/tests/${exe_name}/${exe_name}.hex DESTINATION ./lib)
+  endif()
 else()
   if(DEFINED WIN32)
-    set(soExt .dll)
     set(scriptExt .bat)
 
     file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
@@ -62,16 +64,15 @@ set PATH=%cd%\\bin;%PATH%\n\
 bin\\${lib_name}_test\n\
 pause\n\
 exit"
-  )
+    )
   else()
-    set(soExt .so)
     set(scriptExt .sh)
 
     file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
     "#!/bin/bash\n\
 export LD_LIBRARY_PATH=`pwd`/bin:\${LD_LIBRARY_PATH}\n\
 bin/${lib_name}_test"
-)
+    )
   endif()
 
   install(PROGRAMS ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt} DESTINATION .)

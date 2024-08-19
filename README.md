@@ -8,7 +8,7 @@ Supported hardwares:
 
 ### Compilation
 
-This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its build system and [Conan (minimum version 2.0)](https://conan.io/) for it's dependency package management. Supported compilers are GCC (minimum version 12), MSVC(minimum version 16) and Clang (minimum version 16).
+This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its build system and [Conan (minimum version 2.0)](https://conan.io/) for it's dependency package management. Supported compilers are GCC (minimum version 12), MSVC(minimum version 16). The platform used for compilation is assumed to be Windows/Linux x86_64.
 
 #### Pre-requisites
 
@@ -18,19 +18,18 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - `sudo apt install cmake`.
 - cross compilation:
   - armvv7hf:
-    - `sudo apt install gcc-arm-linux-gnueabihf`.
+    - `sudo apt install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf`.
   - aarch64:
     - `sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu`.
   - rp2040:
-    - `sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential libstdc++-arm-none-eabi-newlib`.
-    - `git clone https://github.com/raspberrypi/pico-sdk.git`
+    - `sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi build-essential libstdc++-arm-none-eabi-newlib`. # Needs to be installed for the 2.x SDK (for picotool) - libusb-1.0-0-dev`.
+    - `git clone https://github.com/raspberrypi/pico-sdk.git --branch 1.5.1`
     - `cd pico-sdk`
     - `git submodule update --init`
-    - build the Raspberry Pi SDK:
+    - build the Raspberry Pi Pico SDK:
       - Conan and the Raspberry Pi Pico Sdk seem to have an issue with conflicting use of the cmake toolchain file
         which results in test programs not being able to be compiled during the conan build process as outlined [here](https://github.com/raspberrypi/pico-sdk/issues/1693).
         At this point we need to build the sdk so that we have the required tools pre-built so the Conan build process will succeed:
-        - `cd pico-sdk`
         - `mkdir build`<br>
            **NOTE**: Conan will assume that the build tools are located in the `build` directory, **do not** use a different directory name.
         - `cd build`
@@ -48,15 +47,15 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - [Install Conan](https://conan.io/downloads).
 - [Install CMake](https://cmake.org/download/).
 
-**1.** Create a default profile (if you have no profiles): `conan profile detect`. This will detect the operating system, build architecture, compiler settings and set the build configuration as Release by default. The profile will be named `default` and will reside in $HOME/.conan2/profiles. 
+1. Install the supported meen conan configurations (v0.1.0) (if not done so already):
+- `conan config install -sf profiles -tf profiles https://${token}@github.com/nbeddows/meen-conan-config.git --args "--branch v0.1.0"`
 
 **2.** Install dependencies:
-- Using the default build and host profiles: `conan install . --build=missing`.
-- Using the default build profile targeting 32 bit Raspberry Pi OS: `conan install . --build=missing -pr:h=profiles/raspberry-32`.<br>
-- Using the default build profile targeting 64 bit Raspberry Pi OS: `conan install . --build=missing -pr:h=profiles/raspberry-64`.<br>
-- Using the default build profile targeting the Raspberry Pi 2040 microcontroller: `conan install . --build=missing -pr:h=profiles/rp2040`.<br>
-
-**NOTE**: raspberry host profiles can be obtained from the [mach-emu project](https://github.com/nbeddows/mach-emu/tree/main/profiles).
+- Windows msvc x86_64 build and host: `conan install . --build=missing --profile:build=windows-msvc-x86_64 --profile:host=windows-msvc-x86_64`.
+- Linux gcc x86_64 build and host: `conan install . --build=missing --profile:build=linux-gcc-x86_64 --profile:host=linux-gcc-x86_64`.
+- Linux gcc x86_64 build, Linux gcc armv7hf host: `conan install . --build=missing -profile:build=linux-gcc-x86_64 -profile:host=linux-gcc-armv7hf`.<br>
+- Linux gcc x86_64 build, Linux gcc aarch64 host: `conan install . --build=missing -profile:build=linux-gcc-x86_64 -profile:host=linux-gcc-aarch64`.<br>
+- Linux x86_64 build, RP2040 microcontroller (baremetal armv6-m) host: `conan install . --build=missing -profile:build=linux-gcc-x86_64 -profile:host=baremetal-gcc-rp2040`.<br>
 
 **NOTE**: when performing a cross compile using a host profile you must install the requisite toolchain of the target architecture, [see pre-requisites](#pre-requisites).
 
@@ -65,11 +64,12 @@ The following install options are supported:
 - enable/disable i8080 arcade support: `--options=with_i8080_arcade=[True|False(default)]`
 - enable/disable rp2040 support: `--options=with_rp2040=[True|False(default)]`
 
-The following will enable i8080 arcade support: `conan install . --build=missing --options=with_i8080_arcade=True`
+The following will enable i8080 arcade support: `conan install . --build=missing --options=with_i8080_arcade=True --profile:build=windows-msvc-x86_64 --profile:host=windows-msvc-x86_64`
 
 The following dependent packages will be installed if required:
 
-- nlohmann_json
+- ArduinoJson (for baremetal platforms)
+- nlohmann_json (for all other platforms)
 
 **3.** Run cmake to configure and generate the build system.
 
@@ -87,24 +87,41 @@ The following dependent packages will be installed if required:
 
 When running a cross compiled build the binaries need to be uploaded to the host machine before they can be executed.
 1. Create an Arm Linux binary distribution: see building a binary development package. 
-2. Copy the distribution to the arm machine: `scp build/Release/Sdk/meen-hw-v0.1.0-Linux-armv7hf-bin.tar.gz ${user}@raspberrypi:meen-hw-v0.1.0.tar.gz`.
+2. Copy the distribution to the arm machine: `scp build/Release/Sdk/meen-hw-v0.1.0-Linux-6.2.0-39-generic-armv7hf-bin.tar.gz ${user}@raspberrypi:meen-hw-v0.1.0.tar.gz`.
 3. Ssh into the arm machine: `ssh ${user}@raspberrypi`.
 4. Extract the meen-hw archive copied over via scp: `tar -xzf meen-hw-v0.1.0.tar.gz`.
-5. Change directory to space-invaders `cd meen-hw`.
+5. Change directory to meen-hw `cd meen-hw`.
 6. Run the unit tests: `./run-meen_hw-tests.sh`.<br>
 
 **RP2040 (armv6-m)**
 
-# TODO: document running from the rp2040 microcontroller
+When running a cross compiled build the binaries need to be uploaded to the host machine before they can be executed.
+This example will assume you are deploying the UF2 file from a Raspberry Pi.
+1. Create an Arm Linux binary distribution: see building a binary development package.
+2. Copy the distribution to the arm machine: `scp build/MinSizeRel/meen-hw-v0.1.0-Linux-6.2.0-39-generic-armv6-bin.tar.gz ${user}@raspberrypi:meen-hw-v0.1.0.tar.gz`.
+3. Ssh into the arm machine: `ssh ${user}@raspberrypi`.
+4. Extract the meen-hw archive copied over via scp: `tar -xzf meen-hw-v0.1.0.tar.gz`.
+5. Hold down the `bootsel` button on the pico and plug in the usb cable into the usb port of the Raspberry Pi then release the `bootsel` button.
+6. Echo the attached `/dev` device (this should show up as `sdb1` for example): `dmesg | tail`.
+7. Create a mount point (if not done already): `sudo mkdir /mnt/pico`.
+8. Mount the device: `sudo mount /dev/sdb1 /mnt/pico`. Run `ls /mnt/pico` to confirm it mounted.
+9. Copy the uf2 image to the pico: `cp meen-hw-v0.1.0-Linux-6.2.0-39-generic-armv6-bin/bin/meen_hw_test.uf2 /mnt/pico`
+10. You should see a new device `ttyACM0`: `ls /dev` to confirm.
+11. Install minicom (if not done already): `sudo apt install minicom`.
+12. Run minicom to see test output: `minicom -b 115200 -o -D /dev/ttyACM0`.
+    You should see the test output running at 1 second intervals.
+13. Quit minicom once done: `ctrl-a, x, enter`
+14. Unmount the device: `sudo umount /mnt/pico`.
 
 #### Building a binary development package
 
-A standalone binary package can be built via `cpack` that can be distributed and installed:
+A standalone binary package can be built via `package` target that can be distributed and installed:
 
-- `cmake --build --preset conan-release --target=meen-hw-pkg`
+- `cmake --build --preset conan-release --target=package`
 
-The `meen-hw-pkg` target defined in the root CMakeLists.txt will build a tar gzipped package via the following cpack command:
+This will also create doxygen generated documentation (todo) and perform static analysis.
 
+The `package` target as defined by the install targets in the root CMakeLists.txt will build a tar gzipped package which can be replicated by the following cpack command:
 - `cpack --config build\CPackConfig.cmake -C ${build_type} -G TGZ`
 
 The underlying package generator used to build the package (in this case `tar`) must be installed otherwise this command will fail.
@@ -117,7 +134,8 @@ This will build a binary package using the `zip` utility.
 
 Run `cpack --help` for a list available generators.
 
-The `meen-hw-pkg` target will also strip all binary files where applicable and will also perform static analysis of the source code via `cppcheck`.
+The final package can be stripped by running the meen_hw_strip_pkg target:
+- `cmake --build --preset conan-release --target=meen_hw_strip_pkg`.
 
 For non rp2040 distrubutions the package will contain a script in the root directory called `run-meen_hw-unit-tests` when the unit tests are enabled which can be used to test the development package:
 - `./run-meen_hw-unit-tests.sh [--gtest_filter ${gtest_filter}]`.

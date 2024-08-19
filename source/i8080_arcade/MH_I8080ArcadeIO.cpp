@@ -20,14 +20,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <algorithm>
 #include <assert.h>
 #include <bitset>
 #include <charconv>
+#include <ctime>
 #include <cstring>
+#ifdef ENABLE_NLOHMANN_JSON
 #include <nlohmann/json.hpp>
+#else
+#include <ArduinoJson.h>
+#endif
 
 #include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
-
 #include "meen_hw/MH_Error.h"
 
 namespace meen_hw::i8080_arcade
@@ -238,19 +243,39 @@ namespace meen_hw::i8080_arcade
 
 	std::error_code MH_I8080ArcadeIO::SetOptions(const char* jsonOptions)
 	{
-		auto err = meen_hw::make_error_code(errc::no_error);
+		auto err = make_error_code(errc::no_error);
+#ifdef ENABLE_NLOHMANN_JSON
 		auto options = nlohmann::json::parse(jsonOptions, nullptr, false);
 
 		if(options.is_discarded() == true)
 		{
-			return meen_hw::make_error_code(errc::json_parse);
+			return make_error_code(errc::json_parse);
 		}
 
 		for (const auto& [key, val] : options.items())
 		{
+#else
+		JsonDocument options;
+
+		auto e = deserializeJson(options, jsonOptions);
+
+		if(e)
+		{
+			return make_error_code(errc::json_parse);
+		}
+
+		for(auto kv : options.as<JsonObject>())
+		{
+			auto key = kv.key();
+#endif
 			if (key == "bpp")
 			{
-				switch (val.get<uint8_t>())
+#ifdef ENABLE_NLOHMANN_JSON
+				auto value = val.get<uint8_t>();
+#else
+				auto value = kv.value().as<uint8_t>();
+#endif
+				switch (value)
 				{
 					case 1:
 					{
@@ -271,7 +296,11 @@ namespace meen_hw::i8080_arcade
 			}
 			else if (key == "colour")
 			{
+#ifdef ENABLE_NLOHMANN_JSON
 				auto colour = val.get<std::string_view>();
+#else
+				auto colour = kv.value().as<std::string_view>();
+#endif
 				auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
 
 				if (errc != std::errc())
@@ -310,7 +339,11 @@ namespace meen_hw::i8080_arcade
 			}
 			else if(key == "orientation")
 			{
+#ifdef ENABLE_NLOHMANN_JSON
 				auto orientation = val.get<std::string>();
+#else
+				auto orientation = kv.value().as<std::string>();
+#endif
 
 				if (orientation == "upright")
 				{
