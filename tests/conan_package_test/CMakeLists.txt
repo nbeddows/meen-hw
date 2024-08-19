@@ -7,6 +7,12 @@ endif()
 
 project(${project_name} LANGUAGES C CXX ASM)
 
+if(NOT BUILD_SHARED_LIBS STREQUAL ON)
+  if(DEFINED WIN32)
+    set(static_lib meen_hw_STATIC)
+  endif()
+endif()
+
 if(enable_rp2040 STREQUAL ON)
   add_executable(Pioasm IMPORTED)
   set_property(TARGET Pioasm PROPERTY IMPORTED_LOCATION $ENV{PICO_SDK_PATH}/build/pioasm/pioasm)
@@ -39,6 +45,7 @@ add_executable(${project_name} source/${project_name}.cpp)
 #    )
 #endif()
 
+target_compile_definitions(${project_name} PRIVATE ${static_lib})
 target_link_libraries(${project_name} meen_hw::meen_hw)
 
 if(enable_rp2040 STREQUAL ON)
