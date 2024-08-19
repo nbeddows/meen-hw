@@ -20,13 +20,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <algorithm>
 #include <assert.h>
 #include <bitset>
 #include <charconv>
+#include <ctime>
 #include <cstring>
+#ifdef ENABLE_NLOHMANN_JSON
 #include <nlohmann/json.hpp>
+#else
+#include <ArduinoJson.h>
+#endif
 
 #include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
+#include "meen_hw/MH_Error.h"
 
 namespace meen_hw::i8080_arcade
 {
@@ -138,7 +145,7 @@ namespace meen_hw::i8080_arcade
 				shift = ++shift & 0x07;
 				//Move to the next vram byte if we have done a full cycle.
 				vramStart += shift == 0;
-			
+
 				if(cocktail == true)
 				{
 					if (++ptr - nextCol >= 256)
@@ -191,7 +198,7 @@ namespace meen_hw::i8080_arcade
 
 					// Since we sample 8 vertical pixels we need to skip another 7 rows when we get to the end of the current row.
 					// TODO: mem pool frames need to be 32 bit aligned, then we don't have to subtract src, ie; just for (begin & (width_ - 1)) == 0
-					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);				
+					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);
 				}
 				break;
 			}
@@ -228,20 +235,47 @@ namespace meen_hw::i8080_arcade
 			}
 			default:
 			{
-				throw std::runtime_error("Invalid blit mode");
+				// todo: log invalid blit mode
+				assert(blitMode_ == BltFlags::Upright || blitMode_ == BltFlags::Native || blitMode_ == BlitFlags::Rgb332 || blitMode_ == BlitFlags::Upright8bpp);
 			}
 		}
 	}
 
-	void MH_I8080ArcadeIO::SetOptions(const char* jsonOptions)
+	std::error_code MH_I8080ArcadeIO::SetOptions(const char* jsonOptions)
 	{
-		auto options = nlohmann::json::parse(jsonOptions);
+		auto err = make_error_code(errc::no_error);
+#ifdef ENABLE_NLOHMANN_JSON
+		auto options = nlohmann::json::parse(jsonOptions, nullptr, false);
+
+		if(options.is_discarded() == true)
+		{
+			return make_error_code(errc::json_parse);
+		}
 
 		for (const auto& [key, val] : options.items())
 		{
+#else
+		JsonDocument options;
+
+		auto e = deserializeJson(options, jsonOptions);
+
+		if(e)
+		{
+			return make_error_code(errc::json_parse);
+		}
+
+		for(auto kv : options.as<JsonObject>())
+		{
+			auto key = kv.key();
+#endif
 			if (key == "bpp")
 			{
-				switch (val.get<uint8_t>())
+#ifdef ENABLE_NLOHMANN_JSON
+				auto value = val.get<uint8_t>();
+#else
+				auto value = kv.value().as<uint8_t>();
+#endif
+				switch (value)
 				{
 					case 1:
 					{
@@ -255,13 +289,18 @@ namespace meen_hw::i8080_arcade
 					}
 					default:
 					{
-						throw std::invalid_argument("Invalid configuration: bpp");
+						err = meen_hw::make_error_code(errc::bpp);
+						break;
 					}
 				}
 			}
 			else if (key == "colour")
 			{
+#ifdef ENABLE_NLOHMANN_JSON
 				auto colour = val.get<std::string_view>();
+#else
+				auto colour = kv.value().as<std::string_view>();
+#endif
 				auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
 
 				if (errc != std::errc())
@@ -289,18 +328,22 @@ namespace meen_hw::i8080_arcade
 					}
 					else
 					{
-						throw std::invalid_argument("Invalid configuration: colour");
+						err = meen_hw::make_error_code(errc::colour);
 					}
 				}
 				else if (*ptr != '\0')
 				{
 					// we parsed something but there is still left over text
-					throw std::invalid_argument("Invalid configuration: colour");
+					err = meen_hw::make_error_code(errc::colour);
 				}
 			}
 			else if(key == "orientation")
 			{
+#ifdef ENABLE_NLOHMANN_JSON
 				auto orientation = val.get<std::string>();
+#else
+				auto orientation = kv.value().as<std::string>();
+#endif
 
 				if (orientation == "upright")
 				{
@@ -312,14 +355,16 @@ namespace meen_hw::i8080_arcade
 				}
 				else
 				{
-					throw std::invalid_argument("Invalid configuration: orientation");
+					err = meen_hw::make_error_code(errc::orientation);
 				}
 			}
 			else
 			{
-				throw std::invalid_argument("Invalid configuration option");
+				//todo: log unknown option
 			}
 		}
+
+		return err;
 	}
 
 	int MH_I8080ArcadeIO::GetVRAMWidth() const

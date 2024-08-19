@@ -20,115 +20,117 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <iostream>
-
+#include <cstdio>
+#ifdef ENABLE_MH_RP2040
+#include <pico/stdlib.h>
+#endif
 #include "meen_hw/MH_Factory.h"
 
 void printEnvironment(const char* version)
 {
 #ifdef NDEBUG
-    std::cout << "meen_hw/" << version <<": Machine Emulator Engine Hardware Release\n";
+    printf("meen_hw/%s: Machine Emulator Engine Hardware Release\n", version);
 #else
-    std::cout << "meen_hw/" << version <<": Machine Emulator Engine Hardware Debug\n";
+    printf("meen_hw/%s: Machine Emulator Engine Hardware Debug\n", version);
 #endif
 
 // ARCHITECTURES
 #ifdef _M_X64
-    std::cout << "  meen_hw/" << version <<": _M_X64 defined\n";
+    printf("  meen_hw/%s: _M_X64 defined\n", version);
 #endif
 
 #ifdef _M_IX86
-    std::cout << "  meen_hw/" << version <<": _M_IX86 defined\n";
+    printf("  meen_hw/%s: _M_IX86 defined\n", version);
 #endif
 
 #ifdef _M_ARM64
-    std::cout << "  meen_hw/" << version <<": _M_ARM64 defined\n";
+    printf("  meen_hw/%s: _M_ARM64 defined\n", version);
 #endif
 
 #if __i386__
-    std::cout << "  meen_hw/" << version <<": __i386__ defined\n";
+    printf("  meen_hw/%s: __i386__ defined\n", version);
 #endif
 
 #if __x86_64__
-    std::cout << "  meen_hw/" << version <<": __x86_64__ defined\n";
+    printf("  meen_hw/%s: __x86_64__ defined\n", version);
 #endif
 
 #if __aarch64__
-    std::cout << "  meen_hw/" << version <<": __aarch64__ defined\n";
+    printf("  meen_hw/%s: __aarch64__ defined\n", version);
 #endif
 
 // Libstdc++
 #if defined _GLIBCXX_USE_CXX11_ABI
-    std::cout << "  meen_hw/" << version <<": _GLIBCXX_USE_CXX11_ABI "<< _GLIBCXX_USE_CXX11_ABI << "\n";
+    printf("  meen_hw/%s: _GLIBCXX_USE_CXX11_ABI %d\n", version, _GLIBCXX_USE_CXX11_ABI);
 #endif
 
 // MSVC runtime
 #if defined(_DEBUG)
     #if defined(_MT) && defined(_DLL)
-        std::cout << "  meen_hw/" << version <<": MSVC runtime: MultiThreadedDebugDLL\n";
+        printf("  meen_hw/%s: MSVC runtime: MultiThreadedDebugDLL\n", version);
     #elif defined(_MT)
-        std::cout << "  meen_hw/" << version <<": MSVC runtime: MultiThreadedDebug\n";
+        printf("  meen_hw/%s: MSVC runtime: MultiThreadedDebug\n", version);
     #endif
 #else
     #if defined(_MT) && defined(_DLL)
-        std::cout << "  meen_hw/" << version <<": MSVC runtime: MultiThreadedDLL\n";
+        printf("  meen_hw/%s: MSVC runtime: MultiThreadedDLL\n", version);
     #elif defined(_MT)
-        std::cout << "  meen_hw/" << version <<": MSVC runtime: MultiThreaded\n";
+        printf("  meen_hw/%s: MSVC runtime: MultiThreaded\n", version);
     #endif
 #endif
 
 // COMPILER VERSIONS
 #if _MSC_VER
-    std::cout << "  meen_hw/" << version <<": _MSC_VER" << _MSC_VER<< "\n";
+    printf("  meen_hw/%s: _MSC_VER %d\n", version, _MSC_VER);
 #endif
 
 #if _MSVC_LANG
-    std::cout << "  meen_hw/" << version <<": _MSVC_LANG" << _MSVC_LANG<< "\n";
+    printf("  meen_hw/%s: _MSVC_LANG %d\n", version, _MSVC_LANG);
 #endif
 
 #if __cplusplus
-    std::cout << "  meen_hw/" << version <<": __cplusplus" << __cplusplus<< "\n";
+    printf("  meen_hw/%s: __cplusplus %d\n", version, __cplusplus);
 #endif
 
 #if __INTEL_COMPILER
-    std::cout << "  meen_hw/" << version <<": __INTEL_COMPILER" << __INTEL_COMPILER<< "\n";
+    printf("  meen_hw/%s: __INTEL_COMPILER %d\n", version, __INTEL_COMPILER);
 #endif
 
 #if __GNUC__
-    std::cout << "  meen_hw/" << version <<": __GNUC__" << __GNUC__<< "\n";
+    printf("  meen_hw/%s: __GNUC__ %d\n", version, __GNUC__);
 #endif
 
 #if __GNUC_MINOR__
-    std::cout << "  meen_hw/" << version <<": __GNUC_MINOR__" << __GNUC_MINOR__<< "\n";
+    printf("  meen_hw/%s: __GNUC_MINOR__%d\n", version, __GNUC_MINOR__);
 #endif
 
 #if __clang_major__
-    std::cout << "  meen_hw/" << version <<": __clang_major__" << __clang_major__<< "\n";
+    printf("  meen_hw/%s: __clang_major__ %d\n", version, __clang_major__);
 #endif
 
 #if __clang_minor__
-    std::cout << "  meen_hw/" << version <<": __clang_minor__" << __clang_minor__<< "\n";
+    printf("  meen_hw/%s: __clang_minor__ %d\n", version, __clang_minor__);
 #endif
 
 #if __apple_build_version__
-    std::cout << "  meen_hw/" << version <<": __apple_build_version__" << __apple_build_version__<< "\n";
+    printf("  meen_hw/%s: __apple_build_version__ %d", version, __apple_build_version__);
 #endif
 
 // SUBSYSTEMS
 #if __MSYS__
-    std::cout << "  meen_hw/" << version <<": __MSYS__" << __MSYS__<< "\n";
+    printf("  meen_hw/%s: __MSYS__ %d\n", version, __MSYS__);
 #endif
 
 #if __MINGW32__
-    std::cout << "  meen_hw/" << version <<": __MINGW32__" << __MINGW32__<< "\n";
+    printf("  meen_hw/%s: __MINGW32__ %d\n", version, __MINGW32__);
 #endif
 
 #if __MINGW64__
-    std::cout << "  meen_hw/" << version <<": __MINGW64__" << __MINGW64__<< "\n";
+    printf("  meen_hw/%s: __MINGW64__ %d\n", version, __MINGW64__);
 #endif
 
 #if __CYGWIN__
-    std::cout << "  meen_hw/" << version <<": __CYGWIN__" << __CYGWIN__<< "\n";
+    printf("  meen_hw/%s: __CYGWIN__ %d\n", version, __CYGWIN__);
 #endif
 }
 
@@ -136,6 +138,18 @@ void printEnvironment(const char* version)
 // It then prints out the meen_hw version along with environment information.
 int main()
 {
-    printEnvironment(meen_hw::Version());
+#ifdef ENABLE_MH_RP2040
+    stdio_init_all();
+
+    while(true)
+#endif
+    {
+        printEnvironment(meen_hw::Version());
+
+#ifdef ENABLE_MH_RP2040
+        sleep_ms(1000);
+#endif
+
+    }
     return 0;
 }

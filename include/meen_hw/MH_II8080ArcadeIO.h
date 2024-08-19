@@ -24,6 +24,7 @@ SOFTWARE.
 #define MEEN_HW_MH_II8080ARCADEIO_H
 
 #include <span>
+#include <system_error>
 
 namespace meen_hw
 {
@@ -103,7 +104,7 @@ namespace meen_hw
 				bit 5= AMP enable          SX5
 				bit 6= NC (not wired)
 				bit 7= NC (not wired)
-				Port 4: (discrete sounds)
+			Port 4:
 				bit 0-7 shift data (LSB on 1st write, MSB on 2nd)
 
 			Port 5:
@@ -151,7 +152,7 @@ namespace meen_hw
 									blit-colour: ["white"(default)|"red"|"green"|"blue"|"random"|hex]
 									blit-orientation: ["cocktail"(default)|"upright"]
 		*/
-		virtual void SetOptions(const char* options) = 0;
+		virtual std::error_code SetOptions(const char* options) = 0;
 
 		/** Write the i8080 arcade vram to a destination buffer.
 		

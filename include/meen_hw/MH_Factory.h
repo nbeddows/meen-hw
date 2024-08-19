@@ -28,7 +28,9 @@ SOFTWARE.
 #include "MH_II8080ArcadeIO.h"
 
 #ifdef _WINDOWS
-#ifdef meen_hw_EXPORTS
+#ifdef meen_hw_STATIC
+#define DLL_EXP_IMP
+#elif defined meen_hw_EXPORTS
 #define DLL_EXP_IMP __declspec(dllexport)
 #else
 #define DLL_EXP_IMP __declspec(dllimport)

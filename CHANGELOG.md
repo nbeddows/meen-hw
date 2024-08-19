@@ -1,3 +1,12 @@
+0.2.0 [19/08/24]
+* Replaced exceptions with std::error_code.
+* Improved conan option handling.
+* Added RP2040 support.
+* Added support for Unity test framework for
+  platforms that don't support GTest.
+* Using well defined Conan profiles (not default).
+* Updated the README for Conan profiles install.
+
 0.1.0 [17/07/24]
 * Added i8080 arcade and resource pool unit tests.
 * Moved and refactored the i8080 arcade hardware code
