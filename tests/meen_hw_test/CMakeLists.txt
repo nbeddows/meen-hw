@@ -70,7 +70,7 @@ exit"
 
     file(WRITE ${CMAKE_BINARY_DIR}/run-${lib_name}-unit-tests${scriptExt}
     "#!/bin/bash\n\
-export LD_LIBRARY_PATH=`pwd`/bin:\${LD_LIBRARY_PATH}\n\
+export LD_LIBRARY_PATH=`pwd`/lib:\${LD_LIBRARY_PATH}\n\
 bin/${lib_name}_test"
     )
   endif()
