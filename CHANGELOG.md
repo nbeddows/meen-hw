@@ -1,4 +1,4 @@
-0.2.1
+0.2.1 [04/09/24]
 * Updated the install instructions for new meen
   conan config profiles.
 * Compiler id and version are now incorporated
