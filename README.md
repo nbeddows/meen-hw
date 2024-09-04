@@ -64,6 +64,11 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 
 **NOTE**: when performing a cross compile using a host profile you must install the requisite toolchain of the target architecture, [see pre-requisites](#pre-requisites).
 
+The following additional install options are supported:
+- enable/disable i8080 arcade support: `--options=with_i8080_arcade=[True|False(default)]`
+
+The following will enable i8080 arcade support: `conan install . --build=missing --profile:all=Windows-x86_64-msvc-193 --options=with_i8080_arcade=True`
+
 The following dependent packages will be installed if required:
 
 - ArduinoJson (for baremetal platforms)
