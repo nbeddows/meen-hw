@@ -1,3 +1,10 @@
+0.2.1 [04/09/24]
+* Updated the install instructions for new meen
+  conan config profiles.
+* Compiler id and version are now incorporated
+  into the package name.
+* Improved conan file compatibility checks.
+
 0.2.0 [19/08/24]
 * Replaced exceptions with std::error_code.
 * Improved conan option handling.

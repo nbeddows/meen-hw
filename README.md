@@ -17,7 +17,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - [Install Conan](https://conan.io/downloads/).
 - `sudo apt install cmake`.
 - cross compilation:
-  - armvv7hf:
+  - armv7hf:
     - `sudo apt install gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf`.
   - aarch64:
     - `sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu`.
@@ -47,24 +47,27 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - [Install Conan](https://conan.io/downloads).
 - [Install CMake](https://cmake.org/download/).
 
-1. Install the supported meen conan configurations (v0.1.0) (if not done so already):
+**1.** Install the supported meen conan configurations (v0.1.0) (if not done so already):
 - `conan config install -sf profiles -tf profiles https://${token}@github.com/nbeddows/meen-conan-config.git --args "--branch v0.1.0"`
 
 **2.** Install dependencies:
-- Windows msvc x86_64 build and host: `conan install . --build=missing --profile:build=windows-msvc-x86_64 --profile:host=windows-msvc-x86_64`.
-- Linux gcc x86_64 build and host: `conan install . --build=missing --profile:build=linux-gcc-x86_64 --profile:host=linux-gcc-x86_64`.
-- Linux gcc x86_64 build, Linux gcc armv7hf host: `conan install . --build=missing -profile:build=linux-gcc-x86_64 -profile:host=linux-gcc-armv7hf`.<br>
-- Linux gcc x86_64 build, Linux gcc aarch64 host: `conan install . --build=missing -profile:build=linux-gcc-x86_64 -profile:host=linux-gcc-aarch64`.<br>
-- Linux x86_64 build, RP2040 microcontroller (baremetal armv6-m) host: `conan install . --build=missing -profile:build=linux-gcc-x86_64 -profile:host=baremetal-gcc-rp2040`.<br>
+- Windows x86_64 build and host: `conan install . --build=missing --profile:all=Windows-x86_64-msvc-193`.
+- Windows x86_64 build and host with unit tests: `conan install . --build=missing --profile:all=Windows-x86_64-msvc-193-gtest`.
+- Linux x86_64 build and host: `conan install . --build=missing --profile:all=Linux-x86_64-gcc-13`.
+- Linux x86_64 build and host with unit tests: `conan install . --build=missing --profile:all=Linux-x86_64-gcc-13-gtest`.
+- Linux x86_64 build, Linux armv7hf host: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=Linux-armv7hf-gcc-13`.
+- Linux x86_64 build, Linux armv7hf host with unit tests: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=Linux-armv7hf-gcc-13-gtest`.
+- Linux x86_64 build, Linux aarch64 host: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=Linux-armv8-gcc-13`.
+- Linux x86_64 build, Linux aarch64 host with unit tests: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=Linux-armv8-gcc-13-gtest`.
+- Linux x86_64 build, RP2040 microcontroller (baremetal armv6-m) host: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=rp2040-armv6-gcc-13`.
+- Linux x86_64 build, RP2040 microcontroller (baremetal armv6-m) host with unit tests: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=rp2040-armv6-gcc-13-unity`.<br>
 
 **NOTE**: when performing a cross compile using a host profile you must install the requisite toolchain of the target architecture, [see pre-requisites](#pre-requisites).
 
-The following install options are supported:
-- build/don't build the unit tests: `--conf=tools.build:skip_test=[True|False(default)]`
+The following additional install options are supported:
 - enable/disable i8080 arcade support: `--options=with_i8080_arcade=[True|False(default)]`
-- enable/disable rp2040 support: `--options=with_rp2040=[True|False(default)]`
 
-The following will enable i8080 arcade support: `conan install . --build=missing --options=with_i8080_arcade=True --profile:build=windows-msvc-x86_64 --profile:host=windows-msvc-x86_64`
+The following will enable i8080 arcade support: `conan install . --build=missing --profile:all=Windows-x86_64-msvc-193 --options=with_i8080_arcade=True`
 
 The following dependent packages will be installed if required:
 
@@ -115,7 +118,7 @@ This example will assume you are deploying the UF2 file from a Raspberry Pi.
 
 #### Building a binary development package
 
-A standalone binary package can be built via `package` target that can be distributed and installed:
+A standalone binary package can be built via the `package` target that can be distributed and installed:
 
 - `cmake --build --preset conan-release --target=package`
 
@@ -134,7 +137,7 @@ This will build a binary package using the `zip` utility.
 
 Run `cpack --help` for a list available generators.
 
-The final package can be stripped by running the meen_hw_strip_pkg target:
+The final package can be stripped by running the meen_hw_strip_pkg target (defined only for platforms that support strip):
 - `cmake --build --preset conan-release --target=meen_hw_strip_pkg`.
 
 For non rp2040 distrubutions the package will contain a script in the root directory called `run-meen_hw-unit-tests` when the unit tests are enabled which can be used to test the development package:

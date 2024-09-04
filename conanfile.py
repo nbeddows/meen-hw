@@ -5,7 +5,7 @@ import os
 
 class MeenHwRecipe(ConanFile):
     name = "meen_hw"
-    version = "0.2.0"
+    version = "0.2.1"
     package_type = "library"
     test_package_folder = "tests/conan_package_test"
 
@@ -52,12 +52,23 @@ class MeenHwRecipe(ConanFile):
     def config_options(self):
         if self.settings.os == "Windows":
             self.options.rm_safe("fPIC")
-            # Currently not supported (maybe in the future)
-            self.options.rm_safe("with_rp2040")
+
             if "arm" in self.settings.arch:
-                self.output.error("Compiling for ARM under Windows OS is currently not supported, use Linux OS")
-        elif self.settings.os == "baremetal":
+                self.output.error("Compiling for Windows ARM is not supported")
+    
+            if self.settings_build.os == "Linux" or self.settings_build == "baremetal":
+                self.output.error("Cross compiling from Linux or baremetal to Windows is not supported")                
+
+        if "arm" in self.settings.arch:
+            self.output.info("Python ARM module not supported, removing option with_python.")
             self.options.rm_safe("with_python")
+
+        if self.settings_build.os == "Windows":
+            self.output.info("Cross compiling with RP2040 support from Windows is not supported, removing option with_rp2040")
+            self.options.rm_safe("with_rp2040")
+
+            if self.settings.os == "Linux" or self.settings.os == "baremetal":
+                self.output.error("Cross compiling from Windows to Linux or baremetal is not supported")
 
     def configure(self):
         if self.options.shared:
