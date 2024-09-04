@@ -25,7 +25,7 @@ set(source_dir source)
 set(lib_name meen_hw)
 set(major 0)
 set(minor 2)
-set(bugfix 0)
+set(bugfix 1)
 
 if(${enable_rp2040} STREQUAL ON)
   include ($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
@@ -200,7 +200,7 @@ if (NOT DEFINED BUILD_TESTING OR NOT ${BUILD_TESTING} STREQUAL OFF)
 endif()
 
 set(CMAKE_INSTALL_PREFIX ./)
-set(CPACK_PACKAGE_FILE_NAME ${lib_name}-v${CMAKE_PROJECT_VERSION}-${build_os}-${build_arch}-${runtime_dir})
+set(CPACK_PACKAGE_FILE_NAME ${lib_name}-v${CMAKE_PROJECT_VERSION}-${build_os}-${build_arch}-${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION})
 set(CPACK_GENERATOR TGZ)
 
 if(DEFINED CMAKE_STRIP)

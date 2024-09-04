@@ -24,14 +24,14 @@ if(${build_os} STREQUAL "baremetal")
   find_package(Unity REQUIRED)
   set(${exe_name}_source_files ${source_dir}/MeenHwUnityTest.cpp)
   set(${exe_name}_deps unity::unity)
+
+  if(${enable_rp2040} STREQUAL ON)
+    set(${exe_name}_deps ${${exe_name}_deps} pico_stdlib)
+  endif()
 else()
   find_package(GTest REQUIRED)
   set(${exe_name}_source_files ${source_dir}/MeenHwGTest.cpp)
   set(${exe_name}_deps GTest::GTest)
-endif()
-
-if(${enable_rp2040} STREQUAL ON)
-  set(${exe_name}_deps ${${exe_name}_deps} pico_stdlib)
 endif()
 
 SOURCE_GROUP("Source" FILES ${${exe_name}_source_files})
