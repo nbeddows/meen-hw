@@ -5,7 +5,7 @@ import os
 
 class MeenHwRecipe(ConanFile):
     name = "meen_hw"
-    version = "0.2.1"
+    version = "0.3.0"
     package_type = "library"
     test_package_folder = "tests/conan_package_test"
 

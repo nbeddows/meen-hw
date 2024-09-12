@@ -1,3 +1,10 @@
+0.3.0
+* SetOptions option `bpp` now supports 16 for 16bpp
+  blits via BlitVRAM.
+* Change blit flag Rgb332 to bpp8.
+* Added blit flags bpp16 and Upright16bpp for
+  16bit blit support.
+
 0.2.1 [04/09/24]
 * Updated the install instructions for new meen
   conan config profiles.
