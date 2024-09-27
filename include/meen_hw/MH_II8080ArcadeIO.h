@@ -148,9 +148,9 @@ namespace meen_hw
 
 									Configuration options are as follows:
 
-									blit-bpp: [1(default)|8] 
-									blit-colour: ["white"(default)|"red"|"green"|"blue"|"random"|hex]
-									blit-orientation: ["cocktail"(default)|"upright"]
+									bpp: [1(default)|8|16] - the pixel format is determined by the calling application. 
+									colour: ["white"(default)|"red"|"green"|"blue"|"random"|hex]
+									orientation: ["cocktail"(default)|"upright"]
 		*/
 		virtual std::error_code SetOptions(const char* options) = 0;
 

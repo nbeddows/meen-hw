@@ -273,14 +273,16 @@ namespace meen_hw::tests
 	TEST_F(MeenHwTest, BlitVRAM)
 	{
 		uint8_t srcVRAM[7168]; // 7168 - width * height @ 1bpp
-		uint8_t expectedVRAM[57344]; // 57344 - width * height @ 8pp
+		//uint8_t expectedVRAM[57344]; // 57344 - width * height @ 8pp
+		uint8_t expectedVRAM[114688]; // 57344 - width * height @ 16pp
 
-		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, std::span<uint8_t> expectedVRAM, int expectedRowBytes, int padding, int compressed, const char* options)
+		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
 			// Blit to native format
 			EXPECT_NO_THROW(i8080ArcadeIO_->SetOptions(options));
 			// To get the row bytes we need to shift down 3 (divide by 8) if we are compressed, 0 if we are uncompressed.
-			auto actualRowBytes = (i8080ArcadeIO_->GetVRAMWidth() >> compressed) + padding; // add some padding so the row bytes differs from the expected
+			auto actualRowBytes = ((i8080ArcadeIO_->GetVRAMWidth() >> compressed) + padding) * bpp; // add some padding so the row bytes differs from the expected
+			auto expectedRowBytes = expectedWidth * bpp;
 			auto dstVRAM = std::vector<uint8_t>(actualRowBytes * i8080ArcadeIO_->GetVRAMHeight());
 			EXPECT_NO_THROW(i8080ArcadeIO_->BlitVRAM(std::span(dstVRAM), actualRowBytes, VRAMToBlit));
 
@@ -307,37 +309,54 @@ namespace meen_hw::tests
 		}
 
 		// Native blit without padding
-		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 0, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 1, 0, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
 		// Native blit with padding
-		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 2, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
-
+		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 1, 2, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
 		// Vertical black and white bars
 		std::fill(expectedVRAM, expectedVRAM + 7168, 0xAA);
-
 		// Native bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 1, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
 		// Native bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 1, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
 
 		for (auto data = expectedVRAM; data < expectedVRAM + 57344; data += 512)
 		{
-			// 256 - uncompressed row bytes
+			// 256 - 8bpp uncompressed row bytes
 			std::fill_n(data, 256, 0x00);
 			std::fill_n(data + 256, 256, 0xFF);
 		}
 
 		// Native orientation 8pp blit without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 57344), 256, 1, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
 		// Native orientation 8pp blit with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 57344), 256, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
 
 		auto data = expectedVRAM;
 		std::fill_n(std::bit_cast<uint16_t*>(data), 28672, 0xFF00);
 
 		// 8 bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 57344), 224, 1, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 		// 8 bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 57344), 224, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+
+		for (auto data = expectedVRAM; data < expectedVRAM + 114688; data += 1024)
+		{
+			// 512 - 16bpp uncompressed row bytes
+			std::fill_n(data, 512, 0x00);
+			std::fill_n(data + 512, 512, 0xFF);
+		}
+
+		// Native orientation 16pp blit without padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"cocktail\"}");
+		// Native orientation 16pp blit with padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"cocktail\"}");
+
+		std::fill_n(std::bit_cast<uint32_t*>(data), 28672, 0xFFFF0000);
+
+		// 16 bpp blit with upright orientation without padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
+		// 16 bpp blit with upright orientation with padding
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
 	}
 #endif
 

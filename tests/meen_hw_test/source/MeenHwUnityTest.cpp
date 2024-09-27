@@ -277,14 +277,15 @@ namespace meen_hw::tests
 		uint8_t srcVRAM[7168]; // 7168 - width * height @ 1bpp
 		uint8_t expectedVRAM[57344]; // 57344 - width * height @ 8pp
 
-		auto checkVRAM = [](std::span<uint8_t> VRAMToBlit, std::span<uint8_t> expectedVRAM, int expectedRowBytes, int padding, int compressed, const char* options)
+		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
 			// Blit to native format
 			TEST_ASSERT_FALSE(i8080ArcadeIO->SetOptions(options));
 			// To get the row bytes we need to shift down 3 (divide by 8) if we are compressed, 0 if we are uncompressed.
-			auto actualRowBytes = (i8080ArcadeIO->GetVRAMWidth() >> compressed) + padding; // add some padding so the row bytes differs from the expected
-			auto dstVRAM = std::vector<uint8_t>(actualRowBytes * i8080ArcadeIO->GetVRAMHeight());
-			i8080ArcadeIO->BlitVRAM(std::span(dstVRAM), actualRowBytes, VRAMToBlit);
+			auto actualRowBytes = ((i8080ArcadeIO_->GetVRAMWidth() >> compressed) + padding) * bpp; // add some padding so the row bytes differs from the expected
+			auto expectedRowBytes = expectedWidth * bpp;
+			auto dstVRAM = std::vector<uint8_t>(actualRowBytes * i8080ArcadeIO_->GetVRAMHeight());
+			i8080ArcadeIO_->BlitVRAM(std::span(dstVRAM), actualRowBytes, VRAMToBlit);
 
 			auto expected = expectedVRAM.data();
 			auto actual = dstVRAM.data();
@@ -309,17 +310,17 @@ namespace meen_hw::tests
 		}
 
 		// Native blit without padding
-		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 0, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 1, 0, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
 		// Native blit with padding
-		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 2, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(srcVRAM), 32, 1, 2, 3, "{\"bpp\":1,\"orientation\":\"cocktail\"}");
 
 		// Vertical black and white bars
 		std::fill(expectedVRAM, expectedVRAM + 7168, 0xAA);
 
 		// Native bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 1, 0, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
 		// Native bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM, 7168), 28, 1, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
 
 		for (auto data = expectedVRAM; data < expectedVRAM + 57344; data += 512)
 		{
@@ -329,17 +330,17 @@ namespace meen_hw::tests
 		}
 		
 		// Native orientation 8pp blit without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 1, 0, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
 		// Native orientation 8pp blit with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 256, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"cocktail\"}");
 
 		auto data = expectedVRAM;
 		std::fill_n(std::bit_cast<uint16_t*>(data), 28672, 0xFF00);
 
 		// 8 bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 1, 0, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 		// 8 bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), std::span(expectedVRAM), 224, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 	}
 #endif
 } // namespace meen_hw::tests
@@ -367,7 +368,6 @@ int main(void)
 		RUN_TEST(meen_hw::tests::test_BlitVRAM);
 #endif
 		err = meen_hw::tests::suiteTearDown(UNITY_END());
-
 #ifdef ENABLE_MH_RP2040
 		sleep_ms(1000);
 #endif

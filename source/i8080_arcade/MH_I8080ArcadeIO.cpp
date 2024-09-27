@@ -130,7 +130,7 @@ namespace meen_hw::i8080_arcade
 	{
 		assert(dst.size() >= src.size());
 
-		auto decompressVram = [src, dst, rb = rowBytes, colour = colour_](uint8_t* nextCol, bool cocktail)
+		auto decompressVram = [src, dst, rb = rowBytes, colour = colour_]<class T, bool cocktail>(uint8_t* nextCol)
 		{
 			auto vramStart = src.begin();
 			auto vramEnd = src.end();
@@ -140,7 +140,7 @@ namespace meen_hw::i8080_arcade
 			while (vramStart < vramEnd)
 			{
 				//Decompress the vram from 1bpp to 8bpp.
-				*ptr = ((*vramStart >> shift) & 0x01) * colour;
+				*(std::bit_cast<T*>(ptr)) = ((*vramStart >> shift) & 0x01) * colour;
 				//Cycle the shift value between 0-7.
 				shift = ++shift & 0x07;
 				//Move to the next vram byte if we have done a full cycle.
@@ -148,7 +148,9 @@ namespace meen_hw::i8080_arcade
 
 				if(cocktail == true)
 				{
-					if (++ptr - nextCol >= 256)
+					ptr += sizeof(T);
+
+					if (ptr - nextCol >= 256 * sizeof(T))
 					{
 						nextCol += rb;
 						ptr = nextCol;
@@ -157,7 +159,15 @@ namespace meen_hw::i8080_arcade
 				else
 				{
 					//If we are not at the first row, move to the previous row, otherwise move to the next column.
-					ptr - rb < dst.data() ? ptr = ++nextCol : ptr -= rb;
+					if (ptr - rb < dst.data())
+					{
+						nextCol += sizeof(T);
+						ptr = nextCol;
+					}
+					else
+					{
+						ptr -= rb;
+					}
 				}
 			}
 		};
@@ -223,20 +233,30 @@ namespace meen_hw::i8080_arcade
 				}
 				break;
 			}
-			case BlitFlags::Rgb332:
+			case BlitFlags::bpp8:
 			{
-				decompressVram(dst.data(), true);
+				decompressVram.template operator()<uint8_t, true>(dst.data());
+				break;
+			}
+			case BlitFlags::bpp16:
+			{
+				decompressVram.template operator()<uint16_t, true>(dst.data());
 				break;
 			}
 			case BlitFlags::Upright8bpp:
 			{
-				decompressVram(dst.data() + rowBytes * (256 - 1), false);
+				decompressVram.template operator()<uint8_t, false>(dst.data() + rowBytes * (256 - 1));
+				break;
+			}
+			case BlitFlags::Upright16bpp:
+			{
+				decompressVram.template operator()<uint16_t, false>(dst.data() + rowBytes * (256 - 1));
 				break;
 			}
 			default:
 			{
 				// todo: log invalid blit mode
-				assert(blitMode_ == BltFlags::Upright || blitMode_ == BltFlags::Native || blitMode_ == BlitFlags::Rgb332 || blitMode_ == BlitFlags::Upright8bpp);
+				assert(blitMode_ == BlitFlags::Upright || blitMode_ == BlitFlags::Native || blitMode_ == BlitFlags::bpp8 || blitMode_ == BlitFlags::bpp16 || blitMode_ == BlitFlags::Upright8bpp || blitMode_ == BlitFlags::Upright16bpp);
 			}
 		}
 	}
@@ -279,12 +299,20 @@ namespace meen_hw::i8080_arcade
 				{
 					case 1:
 					{
-						blitMode_ &= ~BlitFlags::Rgb332;
+						blitMode_ &= ~BlitFlags::bpp8;
+						blitMode_ &= ~BlitFlags::bpp16;
 						break;
 					}
 					case 8:
 					{
-						blitMode_ |= BlitFlags::Rgb332;
+						blitMode_ |= BlitFlags::bpp8;
+						blitMode_ &= ~BlitFlags::bpp16;
+						break;
+					}
+					case 16:
+					{
+						blitMode_ &= ~BlitFlags::bpp8;
+						blitMode_ |= BlitFlags::bpp16;
 						break;
 					}
 					default:
@@ -307,24 +335,24 @@ namespace meen_hw::i8080_arcade
 				{
 					if (colour == "red")
 					{
-						colour_ = 0x80;
+						colour_ = 0xF880;
 					}
 					else if (colour == "green")
 					{
-						colour_ = 0x14;
+						colour_ = 0x07F4;
 					}
 					else if (colour == "blue")
 					{
-						colour_ = 0x07;
+						colour_ = 0x0007;
 					}
 					else if (colour == "white")
 					{
-						colour_ = 0xFF;
+						colour_ = 0xFFFF;
 					}
 					else if (colour == "random")
 					{
 						srand(time(nullptr));
-						colour_ = rand() % 255;
+						colour_ = rand() % 65535 + rand() % 255;
 					}
 					else
 					{

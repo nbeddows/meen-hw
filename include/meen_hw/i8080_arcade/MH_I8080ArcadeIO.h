@@ -42,10 +42,12 @@ namespace meen_hw::i8080_arcade
 		*/
 		enum BlitFlags
 		{
-			Native		= 0 << 0,				/**< Native pixel format (1bpp) and resolution (256 x 224). */
-			Rgb332		= 1 << 0,				/**< 8 bits per pixel with native resolution. */
-			Upright		= 1 << 1,				/**< Native pixel format with a resolution of 224 x 256. */
-			Upright8bpp = Upright | Rgb332		/**< 8 bits per pixel with a resolution of 224 x 256. */
+			Native			= 0 << 0,				/**< Native pixel format (1bpp) and resolution (256 x 224). */
+			bpp8			= 1 << 0,				/**< 8 bits per pixel with native resolution. */
+			bpp16			= 1 << 1,				/**< 16 bits per pixel with native resolution. */
+			Upright			= 1 << 2,				/**< Native pixel format with a resolution of 224 x 256. */
+			Upright8bpp 	= Upright | bpp8,		/**< 8 bits per pixel with a resolution of 224 x 256. */
+			Upright16bpp	= Upright | bpp16		/**< 16 bits per pixel with a resolution of 224 X 256. */
 		};
 
 		/** The next interrupt to execute
@@ -117,7 +119,7 @@ namespace meen_hw::i8080_arcade
 			@see blitMode_
 			@see BlitFlags
 		*/
-		uint8_t colour_{ 0xFF };
+		uint16_t colour_{ 0xFFFF };
 
 	public:
 		/** Read from the specified port
