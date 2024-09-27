@@ -164,7 +164,7 @@ namespace meen_hw
 
 			@remark					No boundry checks are performed. It is expected that
 									the dstVRAM is allocted using the GetVideoWidth and
-									GetVideoHeight methods to determine a minimum allocaion
+									GetVideoHeight methods to determine a minimum allocation
 									size.
 		*/
 		virtual void BlitVRAM(std::span<uint8_t> dstVRAM, int dstVRAMRowBytes, std::span<uint8_t> srcVRAM) = 0;

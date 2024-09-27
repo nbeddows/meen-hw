@@ -130,44 +130,60 @@ namespace meen_hw::i8080_arcade
 	{
 		assert(dst.size() >= src.size());
 
-		auto decompressVram = [src, dst, rb = rowBytes, colour = colour_]<class T, bool cocktail>(uint8_t* nextCol)
+		auto decompressVram = [src, dst, rowBytes, colour = colour_]<class T, bool cocktail>
 		{
-			auto vramStart = src.begin();
-			auto vramEnd = src.end();
-			int8_t shift = 0;
-			auto ptr = nextCol;
+			auto rb = rowBytes / sizeof(T);
+			auto sb = src.begin();
+			T* ds;
+			int width;
+			int height;
 
-			while (vramStart < vramEnd)
+			if constexpr (cocktail == true)
 			{
-				//Decompress the vram from 1bpp to 8bpp.
-				*(std::bit_cast<T*>(ptr)) = ((*vramStart >> shift) & 0x01) * colour;
-				//Cycle the shift value between 0-7.
-				shift = ++shift & 0x07;
-				//Move to the next vram byte if we have done a full cycle.
-				vramStart += shift == 0;
+				width = 256;
+				height = dst.size() / rowBytes;
+				ds = std::bit_cast<T*>(dst.data());
+			}
+			else
+			{
+				width = dst.size() / rowBytes;
+				height = 224;
+				ds = std::bit_cast<T*>(dst.data()) + (rb * (256 - 1));
+			}
 
-				if(cocktail == true)
+			auto de = ds;
+
+			assert(dst.size() >= src.size() * 8 * sizeof(T));
+
+			for(int i = 0; i < height && sb < src.end(); i++)
+			{
+				for(int j = 0; j < width && sb < src.end(); j += 8)
 				{
-					ptr += sizeof(T);
+					auto cp = *sb++;
 
-					if (ptr - nextCol >= 256 * sizeof(T))
-					{
-						nextCol += rb;
-						ptr = nextCol;
+					for(int k = 0; k < 8; k++)
+ 					{
+						*de = ((cp >> k) & 0x01) * static_cast<T>(colour);
+
+						if constexpr (cocktail == true)
+						{
+							++de;
+						}
+						else
+						{
+							de -= rb;
+						}
 					}
+				}
+
+				if constexpr (cocktail == true)
+				{
+					ds += rb;
+					de = ds;
 				}
 				else
 				{
-					//If we are not at the first row, move to the previous row, otherwise move to the next column.
-					if (ptr - rb < dst.data())
-					{
-						nextCol += sizeof(T);
-						ptr = nextCol;
-					}
-					else
-					{
-						ptr -= rb;
-					}
+					de = ++ds;
 				}
 			}
 		};
@@ -235,22 +251,22 @@ namespace meen_hw::i8080_arcade
 			}
 			case BlitFlags::bpp8:
 			{
-				decompressVram.template operator()<uint8_t, true>(dst.data());
+				decompressVram.template operator()<uint8_t, true>();
 				break;
 			}
 			case BlitFlags::bpp16:
 			{
-				decompressVram.template operator()<uint16_t, true>(dst.data());
+				decompressVram.template operator()<uint16_t, true>();
 				break;
 			}
 			case BlitFlags::Upright8bpp:
 			{
-				decompressVram.template operator()<uint8_t, false>(dst.data() + rowBytes * (256 - 1));
+				decompressVram.template operator()<uint8_t, false>();
 				break;
 			}
 			case BlitFlags::Upright16bpp:
 			{
-				decompressVram.template operator()<uint16_t, false>(dst.data() + rowBytes * (256 - 1));
+				decompressVram.template operator()<uint16_t, false>();
 				break;
 			}
 			default:
