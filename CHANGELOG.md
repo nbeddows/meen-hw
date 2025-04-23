@@ -1,9 +1,13 @@
 0.3.0
-* SetOptions option `bpp` now supports 16 for 16bpp
-  blits via BlitVRAM.
-* Change blit flag Rgb332 to bpp8.
-* Added blit flags bpp16 and Upright16bpp for
+* SetOptions option `bpp` now supports `16` for `16bpp`
+  blits via `MH_I8080ArcadeIO::BlitVRAM`.
+* Change blit flag `Rgb332` to `bpp8`.
+* Added blit flags `bpp16` and `Upright16bpp` for
   16bit blit support.
+* The `MH_I8080ArcadeIO::BlitVRAM` method can now blit
+  from sources to destinations of varying dimensions.
+* Fixed a bug where parsing the `colour` option `blue`
+  would fail.
 
 0.2.1 [04/09/24]
 * Updated the install instructions for new meen
