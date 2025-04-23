@@ -162,32 +162,9 @@ namespace meen_hw
 			@param	dstVRAMRowBytes	The width of each dst vram scanline in bytes.
 			@param	srcVRAM			The video ram to copy.
 
-			@remark					No boundry checks are performed. It is expected that
-									the dstVRAM is allocted using the GetVideoWidth and
-									GetVideoHeight methods to determine a minimum allocation
-									size.
+			@remark					The srcVRAM is assumed to be contiguous without padding.
 		*/
-		virtual void BlitVRAM(std::span<uint8_t> dstVRAM, int dstVRAMRowBytes, std::span<uint8_t> srcVRAM) = 0;
-
-		/** Output video width in pixels
-
-			The option `blit-orientation` will determine this value. For a cocktail
-			orientation (default), it will be 256 pixels. For an upright orientation
-			it will be 224 pixels.
-
-			@return				The width of the dstVRAM passed to BlitVRAM. 
-		*/
-		virtual int GetVRAMWidth() const = 0;
-
-		/** Output video height in pixels
-
-			The option `blit-orientation` will determine this value. For a cocktail
-			orientation (default), it will be 224 pixels. For an upright orientation
-			it will be 256 pixels.
-
-			@return				The height of the dstVRAM passed to BlitVRAM.
-		*/
-		virtual int GetVRAMHeight() const = 0;
+		virtual void BlitVRAM(std::span<uint8_t> dst, int dstWidth, int dstRowBytes, std::span<uint8_t> src, int srcWidth) = 0;
 
 		virtual ~MH_II8080ArcadeIO() = default;
 	};
