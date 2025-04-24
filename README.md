@@ -4,7 +4,8 @@ Machine Emulator ENgine Hardware is a collection of 8bit emulated hardwares desi
 
 Supported hardwares:
 
-- i8080 arcade - hardware emulation based on the 1978 Midway/Taito Space Invaders arcade machine. Along with the original Space Invaders title, this emulated hardware is also compatible with Lunar Rescue (1979), Balloon Bomber (1980) and Space Invaders Part II/Deluxe (1980). **NOTE**: currently does not support emulated audio, the consuming application needs to provide audio samples.
+- i8080 arcade - hardware emulation based on the 1978 Midway/Taito Space Invaders arcade machine. Along with the original Space Invaders title, this emulated hardware is also compatible with Lunar Rescue (1979), Balloon Bomber (1980) and Space Invaders Part II/Deluxe (1980). It contains helper methods for blitting the native 1bpp cocktail orientation video ram to to 8/16 bit buffers in either native (cocktail) or upright orientations.<br>
+**NOTE**: currently does not support emulated audio, the consuming application needs to provide audio samples.
 
 ### Compilation
 

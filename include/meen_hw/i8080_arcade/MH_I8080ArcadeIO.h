@@ -144,25 +144,13 @@ namespace meen_hw::i8080_arcade
 		
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
-		void BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src) final;
+		void BlitVRAM(std::span<uint8_t> dst, int dstWidth, int dstRowBytes, std::span<uint8_t> src, int srcWidth) final;
 
 		/** Blit options
 
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
 		std::error_code SetOptions(const char* options) final;
-
-		/** Output video width
-
-			@see MH_II8080ArcadeIO::GetVRAMWidth
-		*/
-		int GetVRAMWidth() const final;
-
-		/** Output video height
-
-			@see MH_II8080ArcadeIO::GetVRAMHeight
-		*/
-		int GetVRAMHeight() const final;
 	};
 } // namespace meen_hw::i8080_arcade
 
