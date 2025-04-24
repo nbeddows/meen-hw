@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -274,16 +274,20 @@ namespace meen_hw::tests
 
 	void test_BlitVRAM()
 	{
-		std::vector<uint8_t> srcVRAM(7168);//[7168]; // 7168 - width * height @ 1bpp
-		//std::vector<uint8_t> expectedVRAM(57344); // 57344 - width * height @ 8pp
-		std::vector<uint8_t> expectedVRAM(114688);//[114688]; // 57344 - width * height @ 16pp
+		std::vector<uint8_t> srcVRAM(7168); // 7168 - width * height @ 1bpp
 
+// todo: need to perform a 16 bit test that uses less memory
+#ifdef ENABLE_MH_RP2040
+		std::vector<uint8_t> expectedVRAM(57344); // 57344 - width * height @ 8pp
+#else
+		std::vector<uint8_t> expectedVRAM(114688); // 114688 - width * height @ 16pp
+#endif // ENABLE_MH_RP2040
 		auto checkVRAM = [](std::span<uint8_t> VRAMToBlit, int width, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
 			// Blit to native format
 			TEST_ASSERT_FALSE(i8080ArcadeIO->SetOptions(options));
-			// To get the row bytes we need to shift down 3 (divide by 8) if we are compressed, 0 if we are uncompressed.
 
+			// To get the row bytes we need to shift down 3 (divide by 8) if we are compressed, 0 if we are uncompressed.
 			auto actualRowBytes = ((width >> compressed) + padding) * bpp; // add some padding so the row bytes differs from the expected
 			auto actualWidth = (width >> compressed); // in pixels
 			auto expectedRowBytes = (width >> compressed) * bpp;
@@ -305,7 +309,7 @@ namespace meen_hw::tests
 
 		// Set the src vram to be blitted to be an alternating black and white scanline pattern
 		// This will act as the expectedVRAM for 1bpp native orientation test
-		for (auto data = srcVRAM.begin(); data < srcVRAM.end()/* + 7168*/; std::advance(data, 64)/*data += 64*/)
+		for (auto data = srcVRAM.begin(); data < srcVRAM.end(); std::advance(data, 64))
 		{
 			// 32 - compressed row bytes
 			std::ranges::fill_n(data, 32, 0x00);
@@ -324,7 +328,7 @@ namespace meen_hw::tests
 		// Native bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 7168), 28, 1, 2, 3, "{\"bpp\":1,\"orientation\":\"upright\"}");
 
-		for (auto data = expectedVRAM.begin(); data < expectedVRAM.begin() + 57344; std::advance(data, 512))//data += 512)
+		for (auto data = expectedVRAM.begin(); data < expectedVRAM.begin() + 57344; std::advance(data, 512))
 		{
 			// 256 - 8bpp uncompressed row bytes
 			std::ranges::fill_n(data, 256, 0x00);
@@ -343,7 +347,9 @@ namespace meen_hw::tests
 		// 8 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 57344), 224, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 
-		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end()/* + 114688*/; std::advance(data, 1024))//data += 1024)
+// todo: need to perform a 16 bit test that uses less memory
+#ifndef ENABLE_MH_RP2040
+		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end(); std::advance(data, 1024))
 		{
 			// 512 - 16bpp uncompressed row bytes
 			std::ranges::fill_n(data, 512, 0x00);
@@ -361,6 +367,7 @@ namespace meen_hw::tests
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
 		// 16 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
+#endif // ENABLE_MH_RP2040
 	}
 #endif
 } // namespace meen_hw::tests
