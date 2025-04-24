@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -269,9 +269,8 @@ namespace meen_hw::tests
 
 	TEST_F(MeenHwTest, BlitVRAM)
 	{
-		std::vector<uint8_t> srcVRAM(7168);//[7168]; // 7168 - width * height @ 1bpp
-		//std::vector<uint8_t> expectedVRAM(57344); // 57344 - width * height @ 8pp
-		std::vector<uint8_t> expectedVRAM(114688);//[114688]; // 57344 - width * height @ 16pp
+		std::vector<uint8_t> srcVRAM(7168); // 7168 - width * height @ 1bpp
+		std::vector<uint8_t> expectedVRAM(114688); // 114688 - width * height @ 16pp
 
 		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, int width, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
@@ -300,7 +299,7 @@ namespace meen_hw::tests
 
 		// Set the src vram to be blitted to be an alternating black and white scanline pattern
 		// This will act as the expectedVRAM for 1bpp native orientation test
-		for (auto data = srcVRAM.begin(); data < srcVRAM.end()/* + 7168*/; std::advance(data, 64)/*data += 64*/)
+		for (auto data = srcVRAM.begin(); data < srcVRAM.end(); std::advance(data, 64))
 		{
 			// 32 - compressed row bytes
 			std::ranges::fill_n(data, 32, 0x00);
@@ -338,7 +337,7 @@ namespace meen_hw::tests
 		// 8 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 57344), 224, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 
-		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end()/* + 114688*/; std::advance(data, 1024))//data += 1024)
+		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end(); std::advance(data, 1024))
 		{
 			// 512 - 16bpp uncompressed row bytes
 			std::ranges::fill_n(data, 512, 0x00);
