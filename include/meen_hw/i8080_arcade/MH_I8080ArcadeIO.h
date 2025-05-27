@@ -140,6 +140,12 @@ namespace meen_hw::i8080_arcade
 		*/
 		uint8_t GenerateInterrupt(uint64_t currTime, uint64_t cycles) final;
 
+		/** Reset the internal state
+
+			@see MH_II8080ArcadeIO::Reset
+		*/
+		void Reset() final;
+
 		/** Write i8080 arcade vram to texture
 		
 			@see MH_II8080ArcadeIO::BlitVRAM
