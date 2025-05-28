@@ -187,10 +187,6 @@ namespace meen_hw::tests
 		value = i8080ArcadeIO->WritePort(3, 0x03);
 		// We should get audio sound effect 1 again but not 2
 		TEST_ASSERT_EQUAL_UINT8(0x01, value);
-		// End the repeating effect (it should play out one more time)
-		value = i8080ArcadeIO->WritePort(3, 0x00);
-		// We should get audio sound effect 1 again
-		TEST_ASSERT_EQUAL_UINT8(0x01, value);
 		// Don't play any audio sound effects
 		value = i8080ArcadeIO->WritePort(3, 0x00);
 		// We should get nothing back

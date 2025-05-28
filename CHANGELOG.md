@@ -8,6 +8,8 @@
   from sources to destinations of varying dimensions.
 * Fixed a bug where parsing the `colour` option `blue`
   would fail.
+* Add the interface method `MH_I8080ArcadeIO::Reset`
+  to reset the non-configurable state.
 
 0.2.1 [04/09/24]
 * Updated the install instructions for new meen

@@ -83,7 +83,9 @@ namespace meen_hw
 
 			@param		port		The input device to read from.
 
-			@return		uint8_t		Non zero if the port was read from, zero otherwise.
+			@remark		Must be called from the same thread as WritePort.
+
+			@return		Non zero if the port was read from, zero otherwise.
 		*/
 		virtual uint8_t ReadPort(uint16_t port) = 0;
 
@@ -123,6 +125,8 @@ namespace meen_hw
 			@param	port		The output device to write to.
 			@param	data		The data to write to the output device.
 
+			@remark				Must be called from the same thread as ReadPort.
+
 			@return				Audio that requires rendering as described above.
 		*/
 		virtual uint8_t WritePort(uint16_t port, uint8_t data) = 0;
@@ -134,11 +138,23 @@ namespace meen_hw
 			This informs the ROM that it is safe to draw to the
 			top and bottom of the video ram.
 
+			@remark				Must be called from the same thread as Reset.
+
 			@return				0: no interrupt has occured.
 								1: the 'beam' is near the centre of the screen.
 								2: the 'beam' is at the end (vBlank). 
 		*/
 		virtual uint8_t GenerateInterrupt(uint64_t currTime, uint64_t cycles) = 0;
+
+		/** Reset the non-configurable state
+		
+			Reset the internal state (not the state that can be configured via the SetOptions method)
+			to that of when this instance was first instantiated.
+
+			@remark				Must be called from the same thread as calls to WritePort, ReadPort and
+								GenerateInterrupt.
+		*/
+		virtual void Reset() = 0;
 
 		/** Blit options
 
@@ -151,6 +167,8 @@ namespace meen_hw
 									bpp: [1(default)|8|16] - the pixel format is determined by the calling application. 
 									colour: ["white"(default)|"red"|"green"|"blue"|"random"|hex]
 									orientation: ["cocktail"(default)|"upright"]
+
+			@remark					Must be called from the same thread as BlitVRAM.
 		*/
 		virtual std::error_code SetOptions(const char* options) = 0;
 
@@ -163,6 +181,7 @@ namespace meen_hw
 			@param	srcVRAM			The video ram to copy.
 
 			@remark					The srcVRAM is assumed to be contiguous without padding.
+			@remark					Must be called from the same thread as SetOptions.
 		*/
 		virtual void BlitVRAM(std::span<uint8_t> dst, int dstWidth, int dstRowBytes, std::span<uint8_t> src, int srcWidth) = 0;
 

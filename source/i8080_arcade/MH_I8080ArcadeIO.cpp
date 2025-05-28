@@ -64,7 +64,7 @@ namespace meen_hw::i8080_arcade
 		else if (port == 3)
 		{
 			// Ufo audio repeats, so we'll handle that as a separate case
-			audio[0] = (data & 1) | (port3Byte_ & 1);
+			audio[0] = data & 1;
 
 			for (int i = 1; i < 8; i++)
 			{
@@ -124,6 +124,17 @@ namespace meen_hw::i8080_arcade
 		}
 
 		return isr;
+	}
+
+	void MH_I8080ArcadeIO::Reset()
+	{
+		lastTime_ = 0;
+		nextInterrupt_ = 1;
+		port3Byte_ = 0;
+		port5Byte_ = 0;
+		shiftAmount_ = 0;
+		shiftData_ = 0;
+		shiftIn_ = 0;
 	}
 
 	void MH_I8080ArcadeIO::BlitVRAM(std::span<uint8_t> dst, int dstWidth, int dstRowBytes, std::span<uint8_t> src, int srcWidth)
