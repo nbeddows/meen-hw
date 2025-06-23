@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+# Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -215,12 +215,22 @@ endif()
 
 target_sources(${lib_name} INTERFACE FILE_SET HEADERS BASE_DIRS ${include_dir} FILES ${${lib_name}_public_include_files})
 
-#install(CODE "execute_process(COMMAND doxygen ${CMAKE_SOURCE_DIR}/docs/Doxyfile)")
+install(CODE "execute_process(COMMAND doxygen ${CMAKE_SOURCE_DIR}/docs/Doxyfile)")
+if(DEFINED MSVC)
+  # Under Windows Doxygen documentaiton causes LaTeX to go into what looks to be an infinite loop, disable until a solution is found
+  # install(CODE "execute_process(COMMAND cmd /c make WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/latex)")
+else()
+  install(CODE "execute_process(COMMAND make WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/latex)")
+endif()
 install(CODE "execute_process(COMMAND cppcheck -ibuild -i_CPack_Packages -itests --check-level=exhaustive --inline-suppr --enable=warning,style,performance,portability,unusedFunction --std=c++20 ${CMAKE_SOURCE_DIR})")
 install(TARGETS ${lib_name} FILE_SET HEADERS)
 install(FILES CHANGELOG.md DESTINATION .)
 install(FILES LICENSE DESTINATION .)
 install(FILES README.md DESTINATION .)
+# Latex to PDF generation under Windows is currently not working, remove the if protection once fixed
+if(NOT DEFINED MSVC)
+  install(FILES ${CMAKE_BINARY_DIR}/latex/refman.pdf RENAME MEEN_Reference.pdf DESTINATION .)
+endif()
 
 if(NOT DEFINED WIN32)
   set(CPACK_SET_DESTDIR ON)
