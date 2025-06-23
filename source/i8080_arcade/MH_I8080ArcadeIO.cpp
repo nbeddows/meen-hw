@@ -33,7 +33,7 @@ SOFTWARE.
 #endif
 
 #include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
-#include "meen_hw/MH_Error.h"
+#include "meen_hw/utils/MH_ErrorCode.h"
 
 namespace meen_hw::i8080_arcade
 {

@@ -20,23 +20,38 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef MEEN_HW_MH_ERROR_H
-#define MEEN_HW_MH_ERROR_H
+#ifndef MEEN_HW_MH_ERRORCODE_H
+#define MEEN_HW_MH_ERRORCODE_H
+
+#include <system_error>
+
+#include "meen_hw/MH_Error.h"
 
 namespace meen_hw
 {
-	/** MEEN HW Error codes
+	/** The custom meen_hw error category
 
-		Used to define error values that are compatible with std::error_code.
+		Defines the name of the error category and the messages that each meen_hw::errc returns.
 	*/
-	enum errc
-	{
-		no_error,		//< No error has occurred.
-		bpp,			//< The configuration value of bpp is invalid.
-		colour,			//< The configuration value of colour is invalid.
-		orientation,	//< The configuration value of orientation is invalid.
-		json_parse		//< The JSON configuration file is malformed.
-	};
+	const std::error_category& category();
+
+	/** std::error_code wrapper
+
+		A simple convenience wrapper
+
+		@param	ec	The meen_hw::errc to use to create a meen_hw std::error_code.	
+	*/
+	inline std::error_code make_error_code(errc ec) { return {ec, meen_hw::category()}; }
 } // namespace meen_hw
 
-#endif // MEEN_HW_MH_ERROR_H
+namespace std
+{
+	/** Boilerplate
+
+		Inform std that our meen_hw::errc enum is a std::error_code enum.
+	*/
+	template<>
+	struct is_error_code_enum<meen_hw::errc> : public std::true_type {};
+} // namespace std
+
+#endif // MEEN_HW_MH_ERRORCODE_H

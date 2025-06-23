@@ -87,7 +87,6 @@ else()
   endif()
 endif()
 
-
 # TODO: rp2040 does not output all artifacts correctly when setting this - investigate me
 if(NOT ${enable_rp2040} STREQUAL ON)
   set(artifacts_dir $<1:${CMAKE_SOURCE_DIR}/artifacts/${build_type}/${build_arch}>)
@@ -111,10 +110,11 @@ endif()
 #endif()
 
 set (${lib_name}_private_include_files
-	${include_dir}/${lib_name}/MH_Error.h
+	${include_dir}/${lib_name}/utils/MH_ErrorCode.h
 )
 
 set (${lib_name}_public_include_files
+	${include_dir}/${lib_name}/MH_Error.h
   ${include_dir}/${lib_name}/MH_Factory.h
   ${include_dir}/${lib_name}/MH_II8080ArcadeIO.h
   ${include_dir}/${lib_name}/MH_Mutex.h
@@ -127,7 +127,7 @@ if(DEFINED MSVC)
   generate_product_version(
     versionResource
     COMPANY_NAME "Nicolas Beddows"
-    FILE_DESCRIPTION "Machine Emulator Engine Hardware"
+    FILE_DESCRIPTION "Machine Emulator ENgine HardWare"
     NAME "MEEN Hardware"
     ORIGINAL_FILE_NAME "${lib_name}.dll"
     PRODUCT_ICON ""
@@ -229,7 +229,7 @@ install(FILES LICENSE DESTINATION .)
 install(FILES README.md DESTINATION .)
 # Latex to PDF generation under Windows is currently not working, remove the if protection once fixed
 if(NOT DEFINED MSVC)
-  install(FILES ${CMAKE_BINARY_DIR}/latex/refman.pdf RENAME MEEN_Reference.pdf DESTINATION .)
+  install(FILES ${CMAKE_BINARY_DIR}/latex/refman.pdf RENAME MEEN_HW_Reference.pdf DESTINATION .)
 endif()
 
 if(NOT DEFINED WIN32)

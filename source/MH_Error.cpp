@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "meen_hw/MH_Error.h"
+#include "meen_hw/utils/MH_ErrorCode.h"
 
 namespace meen_hw
 {
