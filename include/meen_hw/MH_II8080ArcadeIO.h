@@ -298,7 +298,7 @@ namespace meen_hw
 		virtual uint8_t GenerateInterrupt(uint64_t currTime, uint64_t cycles) = 0;
 
 		/** Reset the non-configurable state
-		
+
 			Reset the internal state (not the state that can be configured via the SetOptions method)
 			to that of when this instance was first instantiated.
 
@@ -370,7 +370,7 @@ namespace meen_hw
 			  </tbody>
 			</table>
 
-			@param	options			The i8080 arcade blit options in json format according to the previous table.
+			@param	options			The i8080 arcade blit options in json format according to the previous table.<br>
 									For example: {"bpp":8,"colour":"green"}
 
 			@remark					Must be called from the same thread as BlitVRAM.
@@ -378,7 +378,7 @@ namespace meen_hw
 		virtual std::error_code SetOptions(const char* options) = 0;
 
 		/** Write the i8080 arcade vram to a destination buffer.
-		
+
 			How the vram is blitted is dictated by the options specifed by SetOptions.
 
 			@param	dst				The video memory to write to (texture memory).

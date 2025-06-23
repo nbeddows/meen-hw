@@ -13,7 +13,7 @@
 * Added PDF documentation.
 
 0.2.1 [04/09/24]
-* Updated the install instructions for new meen
+* Updated the install instructions for new MEEN
   conan config profiles.
 * Compiler id and version are now incorporated
   into the package name.

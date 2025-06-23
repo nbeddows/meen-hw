@@ -43,6 +43,11 @@ SOFTWARE.
 #endif
 #endif
 
+/** Machine Emulator ENgine HardWare identifiers
+
+	The root level namespace containing all MEEN Hardware related identifiers, including but not
+	limited to, classes, free functions and enumerations.
+*/
 namespace meen_hw
 {
 	/**
@@ -50,13 +55,10 @@ namespace meen_hw
 
 		@return A string containing the current version, in a format
 				described by [semantic versioning](https://semver.org/)
-
-				```
-				<major>"."<minor>"."<patch>
-				<major>"."<minor>"."<patch>"-"<pre-release>
-				<major>"."<minor>"."<patch>"+"<build>
-				<major>"."<minor>"."<patch>"-"<pre-release>"+"<build>
-				```
+				`<major>"."<minor>"."<patch>`<br>
+				`<major>"."<minor>"."<patch>"-"<pre-release>`<br>
+				`<major>"."<minor>"."<patch>"+"<build>`<br>
+				`<major>"."<minor>"."<patch>"-"<pre-release>"+"<build>`
 	*/
 	DLL_EXP_IMP const char* Version();
 

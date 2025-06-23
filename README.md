@@ -48,7 +48,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - [Install Conan](https://conan.io/downloads).
 - [Install CMake](https://cmake.org/download/).
 
-**1.** Install the supported meen conan configurations (v0.1.0) (if not done so already):
+**1.** Install the supported MEEN conan configurations (v0.1.0) (if not done so already):
 - `conan config install -sf profiles -tf profiles https://${token}@github.com/nbeddows/meen-conan-config.git --args "--branch v0.1.0"`
 
 **2.** Install dependencies:
