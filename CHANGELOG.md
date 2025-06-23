@@ -1,4 +1,4 @@
-0.3.0
+0.3.0 [23/06/25]
 * SetOptions option `bpp` now supports `16` for `16bpp`
   blits via `MH_I8080ArcadeIO::BlitVRAM`.
 * Change blit flag `Rgb332` to `bpp8`.
@@ -10,6 +10,7 @@
   would fail.
 * Add the interface method `MH_I8080ArcadeIO::Reset`
   to reset the non-configurable state.
+* Added PDF documentation.
 
 0.2.1 [04/09/24]
 * Updated the install instructions for new meen
