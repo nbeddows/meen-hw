@@ -365,7 +365,7 @@ namespace meen_hw
 				</tr>
 				<tr>
 				  <td>"upright"</td>
-				  <td>cocktail orientation rotated 90 degrees counter clockwise</td>
+				  <td>Cocktail orientation rotated 90 degrees counter clockwise</td>
 				</tr>
 			  </tbody>
 			</table>
