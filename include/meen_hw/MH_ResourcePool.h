@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -85,7 +85,7 @@ namespace meen_hw
             */
             std::weak_ptr<std::list<std::unique_ptr<T, D>>> resourcePool_;
             
-            /** rsourceMutex_
+            /** resourceMutex_
             
                 A weak pointer to  MH_ResourcePool::resourceMutex that can be used
                 to check if the resource mutex is still alive. When it is alive it will be
@@ -115,7 +115,7 @@ namespace meen_hw
 
                 A deleter with the specified resource pool and resource mutex.
 
-                @param      resourcePool       The resource pool that desructed resources will be returned to.
+                @param      resourcePool       The resource pool that destructed resources will be returned to.
                 @param      resourceMutex      The resource pool mutex that will be used for mutual exclusion.
             */
             ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T, D>>>& resourcePool, const std::shared_ptr<MH_Mutex>& resourceMutex)
@@ -182,7 +182,6 @@ namespace meen_hw
             Add an item to the resource pool.
 
             @param  resource    The resource to be added.
-
         */
         void AddResource(T* resource)
         {
@@ -204,7 +203,7 @@ namespace meen_hw
         {
             std::unique_ptr<T, D> resource;
 
-            // This method is called from ServiceInterrupts so we don't 
+            // This method is called from GenerateInterrupt so we don't 
             // want to block waiting for this mutex as we could stall the cpu,
             // if we don't get it, this resource will be dropped (host is too
             // slow, the machine clock resolution is too high or the function

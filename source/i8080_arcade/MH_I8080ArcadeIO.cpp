@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ SOFTWARE.
 #endif
 
 #include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
-#include "meen_hw/MH_Error.h"
+#include "meen_hw/utils/MH_ErrorCode.h"
 
 namespace meen_hw::i8080_arcade
 {

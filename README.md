@@ -1,6 +1,6 @@
 ### Introduction
 
-Machine Emulator ENgine Hardware is a collection of 8bit emulated hardwares designed to be used as helper modules when building controllers that fit into the [Machine Emulator ENgine framework](http://github.com/nbeddows/mach-emu/).
+Machine Emulator ENgine Hardware is a collection of 8bit emulated hardwares designed to be used as helper modules when building controllers that fit into the [Machine Emulator ENgine framework](http://github.com/nbeddows/meen/).
 
 Supported hardwares:
 
@@ -48,7 +48,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - [Install Conan](https://conan.io/downloads).
 - [Install CMake](https://cmake.org/download/).
 
-**1.** Install the supported meen conan configurations (v0.1.0) (if not done so already):
+**1.** Install the supported MEEN conan configurations (v0.1.0) (if not done so already):
 - `conan config install -sf profiles -tf profiles https://${token}@github.com/nbeddows/meen-conan-config.git --args "--branch v0.1.0"`
 
 **2.** Install dependencies:
@@ -63,7 +63,7 @@ This project uses [CMake (minimum version 3.23)](https://cmake.org/) for its bui
 - Linux x86_64 build, RP2040 microcontroller (baremetal armv6-m) host: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=rp2040-armv6-gcc-13`.
 - Linux x86_64 build, RP2040 microcontroller (baremetal armv6-m) host with unit tests: `conan install . --build=missing -profile:build=Linux-x86_64-gcc-13 -profile:host=rp2040-armv6-gcc-13-unity`.<br>
 
-**NOTE**: when performing a cross compile using a host profile you must install the requisite toolchain of the target architecture, [see pre-requisites](#pre-requisites).
+**NOTE**: when performing a cross compile using a host profile you must install the requisite toolchain of the target architecture, see pre-requisites.
 
 The following additional install options are supported:
 - enable/disable i8080 arcade support: `--options=with_i8080_arcade=[True|False(default)]`
