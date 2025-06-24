@@ -226,7 +226,6 @@ install(CODE "execute_process(COMMAND cppcheck -ibuild -i_CPack_Packages -itests
 install(TARGETS ${lib_name} FILE_SET HEADERS)
 install(FILES CHANGELOG.md DESTINATION .)
 install(FILES LICENSE DESTINATION .)
-install(FILES README.md DESTINATION .)
 # Latex to PDF generation under Windows is currently not working, remove the if protection once fixed
 if(NOT DEFINED MSVC)
   install(FILES ${CMAKE_BINARY_DIR}/latex/refman.pdf RENAME MEEN_HW_Reference.pdf DESTINATION .)
