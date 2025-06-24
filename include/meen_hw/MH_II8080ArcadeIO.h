@@ -291,9 +291,9 @@ namespace meen_hw
 
 			@remark				Must be called from the same thread as Reset.
 
-			@return				0: no interrupt has occured.
-								1: the 'beam' is near the centre of the screen.
-								2: the 'beam' is at the end (vBlank). 
+			@return				0: no interrupt has occured.<br>
+								1: the 'beam' is near the centre of the screen.<br>
+								2: the 'beam' is at the end (vBlank).
 		*/
 		virtual uint8_t GenerateInterrupt(uint64_t currTime, uint64_t cycles) = 0;
 
