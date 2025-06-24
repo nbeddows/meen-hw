@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,10 +42,12 @@ namespace meen_hw::i8080_arcade
 		*/
 		enum BlitFlags
 		{
-			Native		= 0 << 0,				/**< Native pixel format (1bpp) and resolution (256 x 224). */
-			Rgb332		= 1 << 0,				/**< 8 bits per pixel with native resolution. */
-			Upright		= 1 << 1,				/**< Native pixel format with a resolution of 224 x 256. */
-			Upright8bpp = Upright | Rgb332		/**< 8 bits per pixel with a resolution of 224 x 256. */
+			Native			= 0 << 0,				/**< Native pixel format (1bpp) and resolution (256 x 224). */
+			bpp8			= 1 << 0,				/**< 8 bits per pixel with native resolution. */
+			bpp16			= 1 << 1,				/**< 16 bits per pixel with native resolution. */
+			Upright			= 1 << 2,				/**< Native pixel format with a resolution of 224 x 256. */
+			Upright8bpp 	= Upright | bpp8,		/**< 8 bits per pixel with a resolution of 224 x 256. */
+			Upright16bpp	= Upright | bpp16		/**< 16 bits per pixel with a resolution of 224 X 256. */
 		};
 
 		/** The next interrupt to execute
@@ -117,7 +119,7 @@ namespace meen_hw::i8080_arcade
 			@see blitMode_
 			@see BlitFlags
 		*/
-		uint8_t colour_{ 0xFF };
+		uint16_t colour_{ 0xFFFF };
 
 	public:
 		/** Read from the specified port
@@ -138,29 +140,23 @@ namespace meen_hw::i8080_arcade
 		*/
 		uint8_t GenerateInterrupt(uint64_t currTime, uint64_t cycles) final;
 
+		/** Reset the internal state
+
+			@see MH_II8080ArcadeIO::Reset
+		*/
+		void Reset() final;
+
 		/** Write i8080 arcade vram to texture
 		
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
-		void BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src) final;
+		void BlitVRAM(std::span<uint8_t> dst, int dstWidth, int dstRowBytes, std::span<uint8_t> src, int srcWidth) final;
 
 		/** Blit options
 
 			@see MH_II8080ArcadeIO::BlitVRAM
 		*/
 		std::error_code SetOptions(const char* options) final;
-
-		/** Output video width
-
-			@see MH_II8080ArcadeIO::GetVRAMWidth
-		*/
-		int GetVRAMWidth() const final;
-
-		/** Output video height
-
-			@see MH_II8080ArcadeIO::GetVRAMHeight
-		*/
-		int GetVRAMHeight() const final;
 	};
 } // namespace meen_hw::i8080_arcade
 

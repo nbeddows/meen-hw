@@ -5,7 +5,7 @@ import os
 
 class MeenHwRecipe(ConanFile):
     name = "meen_hw"
-    version = "0.2.1"
+    version = "0.3.0"
     package_type = "library"
     test_package_folder = "tests/conan_package_test"
 
@@ -26,6 +26,7 @@ class MeenHwRecipe(ConanFile):
         "CHANGELOG.md",\
         "LICENSE",\
         "README.md",\
+        "docs/*",\
         "include/*",\
         "resource/*",\
         "source/*",\
@@ -77,6 +78,10 @@ class MeenHwRecipe(ConanFile):
 
     def layout(self):
         cmake_layout(self)
+
+        if self.settings.os == "Windows":
+            self.folders.build = "output/build"
+            self.folders.generators = "output/build/generators"
 
     def generate(self):
         deps = CMakeDeps(self)

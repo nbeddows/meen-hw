@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -43,6 +43,11 @@ SOFTWARE.
 #endif
 #endif
 
+/** Machine Emulator ENgine HardWare identifiers
+
+	The root level namespace containing all MEEN Hardware related identifiers, including but not
+	limited to, classes, free functions and enumerations.
+*/
 namespace meen_hw
 {
 	/**
@@ -50,16 +55,19 @@ namespace meen_hw
 
 		@return A string containing the current version, in a format
 				described by [semantic versioning](https://semver.org/)
-
-				```
-				<major>"."<minor>"."<patch>
-				<major>"."<minor>"."<patch>"-"<pre-release>
-				<major>"."<minor>"."<patch>"+"<build>
-				<major>"."<minor>"."<patch>"-"<pre-release>"+"<build>
-				```
+				`<major>"."<minor>"."<patch>`<br>
+				`<major>"."<minor>"."<patch>"-"<pre-release>`<br>
+				`<major>"."<minor>"."<patch>"+"<build>`<br>
+				`<major>"."<minor>"."<patch>"-"<pre-release>"+"<build>`
 	*/
 	DLL_EXP_IMP const char* Version();
 
+	/** i8080 arcade hardware io emulator
+
+		Create an io emulator based on the i8080 arcade hardware.
+
+		@return		A unique i8080 arcade io emulator pointer.
+	*/
 	DLL_EXP_IMP std::unique_ptr<MH_II8080ArcadeIO> MakeI8080ArcadeIO();
 } // namespace meen_hw
 

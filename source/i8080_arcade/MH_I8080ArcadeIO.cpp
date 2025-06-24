@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2021-2024 Nicolas Beddows <nicolas.beddows@gmail.com>
+Copyright (c) 2021-2025 Nicolas Beddows <nicolas.beddows@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ SOFTWARE.
 #endif
 
 #include "meen_hw/i8080_arcade/MH_I8080ArcadeIO.h"
-#include "meen_hw/MH_Error.h"
+#include "meen_hw/utils/MH_ErrorCode.h"
 
 namespace meen_hw::i8080_arcade
 {
@@ -64,7 +64,7 @@ namespace meen_hw::i8080_arcade
 		else if (port == 3)
 		{
 			// Ufo audio repeats, so we'll handle that as a separate case
-			audio[0] = (data & 1) | (port3Byte_ & 1);
+			audio[0] = data & 1;
 
 			for (int i = 1; i < 8; i++)
 			{
@@ -126,38 +126,75 @@ namespace meen_hw::i8080_arcade
 		return isr;
 	}
 
-	void MH_I8080ArcadeIO::BlitVRAM(std::span<uint8_t> dst, int rowBytes, std::span<uint8_t> src)
+	void MH_I8080ArcadeIO::Reset()
 	{
-		assert(dst.size() >= src.size());
+		lastTime_ = 0;
+		nextInterrupt_ = 1;
+		port3Byte_ = 0;
+		port5Byte_ = 0;
+		shiftAmount_ = 0;
+		shiftData_ = 0;
+		shiftIn_ = 0;
+	}
 
-		auto decompressVram = [src, dst, rb = rowBytes, colour = colour_](uint8_t* nextCol, bool cocktail)
+	void MH_I8080ArcadeIO::BlitVRAM(std::span<uint8_t> dst, int dstWidth, int dstRowBytes, std::span<uint8_t> src, int srcWidth)
+	{
+		assert(dstWidth * (dst.size() / dstRowBytes) >= src.size());
+
+		auto decompressVram = [src, dst, dstWidth, dstRowBytes, colour = colour_]<class T, bool cocktail>
 		{
-			auto vramStart = src.begin();
-			auto vramEnd = src.end();
-			int8_t shift = 0;
-			auto ptr = nextCol;
+			auto rb = dstRowBytes / sizeof(T);
+			auto sb = src.begin();
+			T* ds;
+			int width;
+			int height;
 
-			while (vramStart < vramEnd)
+			if constexpr (cocktail == true)
 			{
-				//Decompress the vram from 1bpp to 8bpp.
-				*ptr = ((*vramStart >> shift) & 0x01) * colour;
-				//Cycle the shift value between 0-7.
-				shift = ++shift & 0x07;
-				//Move to the next vram byte if we have done a full cycle.
-				vramStart += shift == 0;
+				width = dstWidth;
+				height = dst.size() / dstRowBytes;
+				ds = std::bit_cast<T*>(dst.data());
+			}
+			else
+			{
+				width = dst.size() / dstRowBytes;
+				height = dstWidth;
+				ds = std::bit_cast<T*>(dst.data()) + (rb * (width - 1));
+			}
 
-				if(cocktail == true)
+			auto de = ds;
+
+			assert(dst.size() >= src.size() * 8 * sizeof(T));
+
+			for(int i = 0; i < height && sb < src.end(); i++)
+			{
+				for(int j = 0; j < width && sb < src.end(); j += 8)
 				{
-					if (++ptr - nextCol >= 256)
-					{
-						nextCol += rb;
-						ptr = nextCol;
+					auto cp = *sb++;
+
+					for(int k = 0; k < 8; k++)
+ 					{
+						*de = ((cp >> k) & 0x01) * static_cast<T>(colour);
+
+						if constexpr (cocktail == true)
+						{
+							++de;
+						}
+						else
+						{
+							de -= rb;
+						}
 					}
+				}
+
+				if constexpr (cocktail == true)
+				{
+					ds += rb;
+					de = ds;
 				}
 				else
 				{
-					//If we are not at the first row, move to the previous row, otherwise move to the next column.
-					ptr - rb < dst.data() ? ptr = ++nextCol : ptr -= rb;
+					de = ++ds;
 				}
 			}
 		};
@@ -166,14 +203,14 @@ namespace meen_hw::i8080_arcade
 		{
 			case BlitFlags::Upright:
 			{
-				static constexpr int srcWidth = 32;
-				static constexpr int srcWidthMinus1 = srcWidth - 1;
+				const int srcWidthMinus1 = srcWidth - 1;
 				// Need to skip an additional 7 rows once the vertical sampling is complete.
-				static constexpr int srcRowSkip = srcWidth * 7;
+				const int srcRowSkip = srcWidth * 7;
 
 				auto begin = src.begin();
 				auto end = src.end();
-				auto start = dst.data() + rowBytes * (256 - 1);
+				auto height = dst.size() / dstRowBytes;
+				auto start = dst.data() + dstRowBytes * (height - 1);
 				auto ptr = start;
 
 				while (begin < end)
@@ -191,20 +228,17 @@ namespace meen_hw::i8080_arcade
 						*ptr = byte;
 
 						// Move to the previous row, else the next column
-						ptr - rowBytes >= dst.data() ? ptr -= rowBytes : ptr = ++start;
+						ptr - dstRowBytes >= dst.data() ? ptr -= dstRowBytes : ptr = ++start;
 					}
 
 					begin++;
-
-					// Since we sample 8 vertical pixels we need to skip another 7 rows when we get to the end of the current row.
-					// TODO: mem pool frames need to be 32 bit aligned, then we don't have to subtract src, ie; just for (begin & (width_ - 1)) == 0
 					begin += (((begin - src.begin() & srcWidthMinus1) == 0) * srcRowSkip);
 				}
 				break;
 			}
 			case BlitFlags::Native:
 			{
-				if(rowBytes == 32)
+				if((dstRowBytes == dstWidth) && (dstWidth == srcWidth)) // We don't support source padding, so if the destination is not padded, do a straight copy
 				{
 					std::copy(src.begin(), src.end(), dst.begin());
 				}
@@ -214,29 +248,39 @@ namespace meen_hw::i8080_arcade
 					auto s = src.begin();
 
 					// copy out each scanline
-					while(s < src.end())
+					while(d < dst.end() && s < src.end())
 					{
-						std::copy_n(s, 32, d);
-						d += rowBytes;
-						s += 32;
+						std::copy_n(s, srcWidth, d);
+						d += dstRowBytes;
+						s += srcWidth;
 					}
 				}
 				break;
 			}
-			case BlitFlags::Rgb332:
+			case BlitFlags::bpp8:
 			{
-				decompressVram(dst.data(), true);
+				decompressVram.template operator()<uint8_t, true>();
+				break;
+			}
+			case BlitFlags::bpp16:
+			{
+				decompressVram.template operator()<uint16_t, true>();
 				break;
 			}
 			case BlitFlags::Upright8bpp:
 			{
-				decompressVram(dst.data() + rowBytes * (256 - 1), false);
+				decompressVram.template operator()<uint8_t, false>();
+				break;
+			}
+			case BlitFlags::Upright16bpp:
+			{
+				decompressVram.template operator()<uint16_t, false>();
 				break;
 			}
 			default:
 			{
 				// todo: log invalid blit mode
-				assert(blitMode_ == BltFlags::Upright || blitMode_ == BltFlags::Native || blitMode_ == BlitFlags::Rgb332 || blitMode_ == BlitFlags::Upright8bpp);
+				assert(blitMode_ == BlitFlags::Upright || blitMode_ == BlitFlags::Native || blitMode_ == BlitFlags::bpp8 || blitMode_ == BlitFlags::bpp16 || blitMode_ == BlitFlags::Upright8bpp || blitMode_ == BlitFlags::Upright16bpp);
 			}
 		}
 	}
@@ -279,12 +323,20 @@ namespace meen_hw::i8080_arcade
 				{
 					case 1:
 					{
-						blitMode_ &= ~BlitFlags::Rgb332;
+						blitMode_ &= ~BlitFlags::bpp8;
+						blitMode_ &= ~BlitFlags::bpp16;
 						break;
 					}
 					case 8:
 					{
-						blitMode_ |= BlitFlags::Rgb332;
+						blitMode_ |= BlitFlags::bpp8;
+						blitMode_ &= ~BlitFlags::bpp16;
+						break;
+					}
+					case 16:
+					{
+						blitMode_ &= ~BlitFlags::bpp8;
+						blitMode_ |= BlitFlags::bpp16;
 						break;
 					}
 					default:
@@ -301,40 +353,36 @@ namespace meen_hw::i8080_arcade
 #else
 				auto colour = kv.value().as<std::string_view>();
 #endif
-				auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
 
-				if (errc != std::errc())
+				if (colour == "red")
 				{
-					if (colour == "red")
-					{
-						colour_ = 0x80;
-					}
-					else if (colour == "green")
-					{
-						colour_ = 0x14;
-					}
-					else if (colour == "blue")
-					{
-						colour_ = 0x07;
-					}
-					else if (colour == "white")
-					{
-						colour_ = 0xFF;
-					}
-					else if (colour == "random")
-					{
-						srand(time(nullptr));
-						colour_ = rand() % 255;
-					}
-					else
+					colour_ = 0xF880;
+				}
+				else if (colour == "green")
+				{
+					colour_ = 0x07F4;
+				}
+				else if (colour == "blue")
+				{
+					colour_ = 0x0007;
+				}
+				else if (colour == "white")
+				{
+					colour_ = 0xFFFF;
+				}
+				else if (colour == "random")
+				{
+					srand(time(nullptr));
+					colour_ = rand() % 65535 + rand() % 255;
+				}
+				else
+				{
+					auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
+
+					if (errc != std::errc() || *ptr != '\0')
 					{
 						err = meen_hw::make_error_code(errc::colour);
 					}
-				}
-				else if (*ptr != '\0')
-				{
-					// we parsed something but there is still left over text
-					err = meen_hw::make_error_code(errc::colour);
 				}
 			}
 			else if(key == "orientation")
@@ -365,15 +413,5 @@ namespace meen_hw::i8080_arcade
 		}
 
 		return err;
-	}
-
-	int MH_I8080ArcadeIO::GetVRAMWidth() const
-	{
-		return blitMode_ & BlitFlags::Upright ? 224 : 256;
-	}
-
-	int MH_I8080ArcadeIO::GetVRAMHeight() const
-	{
-		return blitMode_ & BlitFlags::Upright ? 256 : 224;
 	}
 } // namespace meen_hw::i8080_arcade
