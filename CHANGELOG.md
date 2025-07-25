@@ -1,3 +1,15 @@
+0.4.0
+* Added testing and release workflows for GitHub Actions CI/CD.
+* Dropped GCC-12 support.
+* Added GCC-14 support.
+* Added support for the latest pico sdk (2.1.1) while maintaing
+  support for sdk version 1.5.1.
+* Embed common information in meen_hardware_test.uf2.
+* Replaced Conan option `with_rp2040` with `with_board`.
+* Added the Conan option `with_framework`.
+* Using ArduinoJson exclusively.
+* Updated GTest dependency to 1.16.0.
+
 0.3.0 [23/06/25]
 * SetOptions option `bpp` now supports `16` for `16bpp`
   blits via `MH_I8080ArcadeIO::BlitVRAM`.
