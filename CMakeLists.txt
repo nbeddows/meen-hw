@@ -27,23 +27,15 @@ set(major 0)
 set(minor 3)
 set(bugfix 0)
 
-if(${enable_rp2040} STREQUAL ON)
+if(NOT ${enable_board} STREQUAL "none")
+  set(PICO_BOARD ${enable_board})
   include ($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 endif()
 
 project(${lib_name} VERSION ${major}.${minor}.${bugfix} LANGUAGES C CXX ASM)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if(${enable_rp2040} STREQUAL ON)
-  add_executable(Pioasm IMPORTED)
-  set_property(TARGET Pioasm PROPERTY IMPORTED_LOCATION $ENV{PICO_SDK_PATH}/build/pioasm/pioasm)
-  set(Pioasm_FOUND 1)
-
-  # In the 2.x SDK this is handled by picotool, need to account for this with version numbers
-  add_executable(ELF2UF2 IMPORTED)
-  set_property(TARGET ELF2UF2 PROPERTY IMPORTED_LOCATION $ENV{PICO_SDK_PATH}/build/elf2uf2/elf2uf2)
-  set(ELF2UF2_FOUND 1)
-
+if(NOT ${enable_board} STREQUAL "none")
   pico_sdk_init()
 endif()
 
@@ -88,7 +80,7 @@ else()
 endif()
 
 # TODO: rp2040 does not output all artifacts correctly when setting this - investigate me
-if(NOT ${enable_rp2040} STREQUAL ON)
+if(${enable_board} STREQUAL "none")
   set(artifacts_dir $<1:${CMAKE_SOURCE_DIR}/artifacts/${build_type}/${build_arch}>)
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${artifacts_dir}/${archive_dir})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${artifacts_dir}/${runtime_dir})
@@ -97,11 +89,7 @@ endif()
 
 # if any emulated hardware is enabled
 if(${enable_i8080_arcade} STREQUAL ON)
-  if(${build_os} STREQUAL "baremetal")
     find_package(ArduinoJson REQUIRED)
-  else()
-    find_package(nlohmann_json REQUIRED)
-  endif()
 endif()
 
 #if(enable_python_module STREQUAL ON)
@@ -186,13 +174,7 @@ endif()
 # if any emulated hardware is enabled
 if(${enable_i8080_arcade} STREQUAL ON)
   target_compile_definitions(${lib_name} PUBLIC ENABLE_MH_I8080ARCADE)
-
-  if(${build_os} STREQUAL "baremetal")
-    target_link_libraries(${lib_name} PRIVATE ArduinoJson)
-  else()
-    target_compile_definitions(${lib_name} PRIVATE ENABLE_NLOHMANN_JSON)
-    target_link_libraries(${lib_name} PRIVATE nlohmann_json::nlohmann_json)
-  endif()
+  target_link_libraries(${lib_name} PRIVATE ArduinoJson)
 endif()
 
 if (NOT DEFINED BUILD_TESTING OR NOT ${BUILD_TESTING} STREQUAL OFF)
@@ -219,16 +201,18 @@ install(CODE "execute_process(COMMAND doxygen ${CMAKE_SOURCE_DIR}/docs/Doxyfile)
 if(DEFINED MSVC)
   # Under Windows Doxygen documentaiton causes LaTeX to go into what looks to be an infinite loop, disable until a solution is found
   # install(CODE "execute_process(COMMAND cmd /c make WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/latex)")
-else()
+# We are not going to build the documentation on arm platforms
+elseif(${build_arch} STREQUAL x86_64)
   install(CODE "execute_process(COMMAND make WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/latex)")
 endif()
-install(CODE "execute_process(COMMAND cppcheck -ibuild -i_CPack_Packages -itests --check-level=exhaustive --inline-suppr --enable=warning,style,performance,portability,unusedFunction --std=c++20 ${CMAKE_SOURCE_DIR})")
 install(TARGETS ${lib_name} FILE_SET HEADERS)
 install(FILES CHANGELOG.md DESTINATION .)
 install(FILES LICENSE DESTINATION .)
 # Latex to PDF generation under Windows is currently not working, remove the if protection once fixed
 if(NOT DEFINED MSVC)
-  install(FILES ${CMAKE_BINARY_DIR}/latex/refman.pdf RENAME MEEN_HW_Reference.pdf DESTINATION .)
+  if(${build_arch} STREQUAL x86_64)
+    install(FILES ${CMAKE_BINARY_DIR}/latex/refman.pdf RENAME MEEN_HW_Reference.pdf DESTINATION .)
+  endif()
 endif()
 
 if(NOT DEFINED WIN32)
