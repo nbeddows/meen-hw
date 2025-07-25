@@ -22,9 +22,9 @@ SOFTWARE.
 
 #include <algorithm>
 #include <bit>
-#ifdef ENABLE_MH_RP2040
+#ifdef PICO_BOARD
 #include <pico/stdlib.h>
-#endif
+#endif // PICO_BOARD
 #include <unity/unity.h>
 #include <vector>
 
@@ -273,11 +273,11 @@ namespace meen_hw::tests
 		std::vector<uint8_t> srcVRAM(7168); // 7168 - width * height @ 1bpp
 
 // todo: need to perform a 16 bit test that uses less memory
-#ifdef ENABLE_MH_RP2040
+#ifdef PICO_BOARD
 		std::vector<uint8_t> expectedVRAM(57344); // 57344 - width * height @ 8pp
 #else
 		std::vector<uint8_t> expectedVRAM(114688); // 114688 - width * height @ 16pp
-#endif // ENABLE_MH_RP2040
+#endif // PICO_BOARD
 		auto checkVRAM = [](std::span<uint8_t> VRAMToBlit, int width, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
 			// Blit to native format
@@ -344,7 +344,7 @@ namespace meen_hw::tests
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 57344), 224, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 
 // todo: need to perform a 16 bit test that uses less memory
-#ifndef ENABLE_MH_RP2040
+#ifndef PICO_BOARD
 		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end(); std::advance(data, 1024))
 		{
 			// 512 - 16bpp uncompressed row bytes
@@ -363,7 +363,7 @@ namespace meen_hw::tests
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
 		// 16 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
-#endif // ENABLE_MH_RP2040
+#endif // PICO_BOARD
 	}
 #endif
 } // namespace meen_hw::tests
@@ -371,11 +371,11 @@ namespace meen_hw::tests
 int main(void)
 {
 	int err = 0;
-#ifdef ENABLE_MH_RP2040
+#ifdef PICO_BOARD
 	stdio_init_all();
 
 	while(true)
-#endif
+#endif // PICO_BOARD
 	{
 		meen_hw::tests::suiteSetUp();
 		UNITY_BEGIN();
@@ -390,9 +390,9 @@ int main(void)
 		RUN_TEST(meen_hw::tests::test_BlitVRAM);
 #endif
 		err = meen_hw::tests::suiteTearDown(UNITY_END());
-#ifdef ENABLE_MH_RP2040
+#ifdef PICO_BOARD
 		sleep_ms(1000);
-#endif
+#endif // PICO_BOARD
 	}
 
 	return err;

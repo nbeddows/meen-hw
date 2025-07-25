@@ -23,7 +23,7 @@ SOFTWARE.
 #ifndef MEEN_HW_MH_MUTEX_H
 #define MEEN_HW_MH_MUTEX_H
 
-#ifdef ENABLE_MH_RP2040
+#ifdef PICO_BOARD
 	#include <pico/mutex.h>
 	using mh_mutex = mutex_t;
 
@@ -39,12 +39,12 @@ SOFTWARE.
 	#define MH_MUTEX_LOCK(m) m.lock()
 	#define MH_MUTEX_TRY_LOCK(m) m.try_lock()
 	#define MH_MUTEX_UNLOCK(m) m.unlock()
-#endif // ENABLE_MH_RP2040
+#endif // PICO_BOARD
 
 namespace meen_hw
 {
 	/** Mutex wrapper
-	
+
 		A class which wraps all the supported mutex types.
 		The mutex type (mh_mutex) is dependent on the platform being targeted.
 		Supported mutex types are std::mutex and pico mutex.
@@ -55,7 +55,7 @@ namespace meen_hw
 		mh_mutex mtx_;
 	public:
 		/** Default constructor
-		
+
 			Construct a mutex whose type is platform dependent.
 		*/
 		MH_Mutex()
@@ -64,13 +64,13 @@ namespace meen_hw
 		}
 
 		/** Destructor
-		
+
 			Use a default destructor.
 		*/
 		~MH_Mutex() = default;
 
 		/** Acquire the mutex
-		
+
 			This will block until the mutex is acquired.
 		*/
 		void lock()
@@ -79,7 +79,7 @@ namespace meen_hw
 		}
 
 		/** Acquire the mutex
-		
+
 			This is a non-blocking version of lock.
 
 			@return		True if the mutex was acquired, false otherwise.
@@ -90,7 +90,7 @@ namespace meen_hw
 		}
 
 		/** Release the mutex
-		
+
 			Allow other threads a change to acquire this mutex.
 		*/
 		void unlock()
@@ -100,7 +100,7 @@ namespace meen_hw
 	};
 
 	/** A simple lock guard implementation
-	
+
 		This could be a templated class, however, since it
 		is only used for MH_Mutex, we keep the implementation
 		specific to that.
@@ -111,7 +111,7 @@ namespace meen_hw
 		MH_Mutex& mtx_;
 	public:
 		/** Initialisation constructor
-		
+
 			Lock the assigned mutex until this instance is destructed.
 
 			@param	mtx		The mutex to lock.
@@ -123,7 +123,7 @@ namespace meen_hw
 		}
 
 		/** Destructor
-		
+
 			Unlock the mutex assigned in the constructor.
 		*/
 		~MH_LockGuard()
@@ -132,13 +132,13 @@ namespace meen_hw
 		}
 
 		/** Copy constructor
-		
+
 			This constructor is deleted.
 		*/
 		MH_LockGuard(const MH_LockGuard&) = delete;
-		
+
 		/** Assignment operator
-		
+
 			This operator is deleted.
 		*/
 		MH_LockGuard& operator=(const MH_LockGuard&) = delete;
