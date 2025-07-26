@@ -115,5 +115,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: ReleaseNotes.md
-          files: ${{ matrix.package_dir }}/meen-hw*.tar.gz
+          files: ${{ matrix.package_dir }}/meen_hw*.tar.gz
           generate_release_notes: true
