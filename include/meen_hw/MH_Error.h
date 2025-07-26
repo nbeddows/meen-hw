@@ -31,11 +31,11 @@ namespace meen_hw
 	*/
 	enum errc
 	{
-		no_error,		//< No error has occurred.
-		bpp,			//< The configuration value of bpp is invalid.
-		colour,			//< The configuration value of colour is invalid.
-		orientation,	//< The configuration value of orientation is invalid.
-		json_parse		//< The JSON configuration file is malformed.
+		no_error,		/**< No error has occurred */
+		bpp,			/**< The configuration value of bpp is invalid */
+		colour,			/**< The configuration value of colour is invalid */
+		orientation,	/**< The configuration value of orientation is invalid */
+		json_parse		/**< The JSON configuration file is malformed */
 	};
 } // namespace meen_hw
 
