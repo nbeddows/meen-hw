@@ -115,7 +115,7 @@ When running a cross compiled build the binaries need to be uploaded to the host
 5. Change directory to meen-hw `cd meen-hw`
 6. Run the unit tests: `./run-meen_hw-tests.sh`<br>
 
-**RP2040 (armv6-m)**
+**Pico RP2040 (armv6-m)**
 
 When running a cross compiled build the binaries need to be uploaded to the host machine before they can be executed.
 This example will assume you are deploying the UF2 file from a Raspberry Pi.

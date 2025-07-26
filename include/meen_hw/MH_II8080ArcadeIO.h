@@ -373,6 +373,16 @@ namespace meen_hw
 			@param	options			The i8080 arcade blit options in json format according to the previous table.<br>
 									For example: {"bpp":8,"colour":"green"}
 
+			@return					One of the following MEEN Hardware std error codes:
+
+			| MEEN HW error code | Remarks                                                                     |
+			|:-------------------|:----------------------------------------------------------------------------|
+            | no_error           | The options were applied successfully                                       |
+			| json_parse         | The options failed to deserialize or one or more of the options are invalid |
+			| bpp                | The bpp value is invalid                                                    |
+			| colour             | The colour value is invalid                                                 |
+			| orientation        | The orientation value is invalid                                            |
+
 			@remark					Must be called from the same thread as BlitVRAM.
 		*/
 		virtual std::error_code SetOptions(const char* options) = 0;
