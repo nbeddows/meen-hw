@@ -5,21 +5,21 @@ import os
 
 class MeenHwRecipe(ConanFile):
     name = "meen_hw"
-    version = "0.3.0"
+    version = "0.4.0"
     package_type = "library"
     test_package_folder = "tests/conan_package_test"
 
     # Optional metadata
     license = "MIT"
     author = "Nicolas Beddows <nicolas.beddows@gmail.com>"
-    url = "https://github.com/nbeddows"
+    url = "https://github.com/nbeddows/meen-hw"
     description = "Machine Emulator Engine Hardware"
     topics = ("emulator", "i8080")
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False], "with_i8080_arcade": [True, False], "with_python": [True, False], "with_rp2040": [True, False]}
-    default_options = {"gtest*:build_gmock": False, "shared": True, "fPIC": True, "with_i8080_arcade": False, "with_python": False, "with_rp2040": False}
+    options = {"shared": [True, False], "fPIC": [True, False], "with_board": ["none", "pico"], "with_framework": ["none", "gtest", "unity"], "with_i8080_arcade": [True, False], "with_python": [True, False]}
+    default_options = {"gtest*:build_gmock": False, "shared": True, "fPIC": True, "with_board": "none", "with_framework": "none", "with_i8080_arcade": False, "with_python": False}
 
     # Sources are located in the same place as this recipe, copy them to the recipe
     exports_sources = "CMakeLists.txt",\
@@ -35,20 +35,17 @@ class MeenHwRecipe(ConanFile):
     def requirements(self):
         # if any hardware has been set
         if self.options.with_i8080_arcade:
-            if self.settings.os == "baremetal":
-                self.requires("arduinojson/7.0.1")
-            else:
-                self.requires("nlohmann_json/3.11.3")
+            self.requires("arduinojson/7.0.1")
 
         if self.options.get_safe("with_python", False):
             self.requires("pybind11/2.12.0")
 
     def build_requirements(self):
         if not self.conf.get("tools.build:skip_test", default=False):
-            if self.settings.os == "baremetal":
+            if self.options.get_safe("with_framework", "none") == "gtest":
+                self.test_requires("gtest/1.16.0")
+            elif self.options.get_safe("with_framework", "none") == "unity":
                 self.test_requires("unity/2.6.0")
-            else:
-                self.test_requires("gtest/1.14.0")
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -56,17 +53,16 @@ class MeenHwRecipe(ConanFile):
 
             if "arm" in self.settings.arch:
                 self.output.error("Compiling for Windows ARM is not supported")
-    
-            if self.settings_build.os == "Linux" or self.settings_build == "baremetal":
-                self.output.error("Cross compiling from Linux or baremetal to Windows is not supported")                
 
-        if "arm" in self.settings.arch:
-            self.output.info("Python ARM module not supported, removing option with_python.")
+            if self.settings_build.os == "Linux" or self.settings_build == "baremetal":
+                self.output.error("Cross compiling from Linux or baremetal to Windows is not supported")
+        elif self.settings.os == "baremetal":
+            self.output.info("Python module not supported, removing option with_python.")
             self.options.rm_safe("with_python")
 
         if self.settings_build.os == "Windows":
-            self.output.info("Cross compiling with RP2040 support from Windows is not supported, removing option with_rp2040")
-            self.options.rm_safe("with_rp2040")
+            self.output.info("Cross compiling for microcontrollers from Windows is not supported, removing options 'with_board'")
+            self.options.rm_safe("with_board")
 
             if self.settings.os == "Linux" or self.settings.os == "baremetal":
                 self.output.error("Cross compiling from Windows to Linux or baremetal is not supported")
@@ -74,7 +70,14 @@ class MeenHwRecipe(ConanFile):
     def configure(self):
         if self.options.shared:
             self.options.rm_safe("fPIC")
-            self.options.rm_safe("with_rp2040")
+            self.options.rm_safe("with_board")
+
+        if self.settings.os == "baremetal":
+            if self.options.get_safe("with_board", "none") == "none":
+                self.output.error("Baremetal unsupported (did you set the option 'with_board'?)")
+
+            if self.options.get_safe("with_framework", "none") == "gtest":
+                self.output.error("GTest not supported (did you set the option `with_framework=unity`?)")
 
     def layout(self):
         cmake_layout(self)
@@ -89,7 +92,8 @@ class MeenHwRecipe(ConanFile):
         tc = CMakeToolchain(self)
         tc.cache_variables["enable_python_module"] = self.options.get_safe("with_python", False)
         tc.cache_variables["enable_i8080_arcade"] = self.options.with_i8080_arcade
-        tc.cache_variables["enable_rp2040"] = self.options.get_safe("with_rp2040", False)
+        tc.cache_variables["enable_board"] = self.options.get_safe("with_board", "none")
+        tc.cache_variables["enable_framework"] = self.options.get_safe("with_framework", "none")
         tc.variables["build_os"] = self.settings.os
         tc.variables["build_arch"] = self.settings.arch
         tc.variables["archive_dir"] = self.cpp_info.libdirs[0]

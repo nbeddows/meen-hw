@@ -22,6 +22,7 @@ SOFTWARE.
 
 #include <algorithm>
 #include <assert.h>
+#include <bit>
 #include <bitset>
 #include <charconv>
 #include <ctime>
@@ -29,6 +30,7 @@ SOFTWARE.
 #ifdef ENABLE_NLOHMANN_JSON
 #include <nlohmann/json.hpp>
 #else
+#define ARDUINOJSON_ENABLE_STRING_VIEW 1
 #include <ArduinoJson.h>
 #endif
 
@@ -341,7 +343,7 @@ namespace meen_hw::i8080_arcade
 					}
 					default:
 					{
-						err = meen_hw::make_error_code(errc::bpp);
+						err = make_error_code(errc::bpp);
 						break;
 					}
 				}
@@ -381,7 +383,7 @@ namespace meen_hw::i8080_arcade
 
 					if (errc != std::errc() || *ptr != '\0')
 					{
-						err = meen_hw::make_error_code(errc::colour);
+						err = make_error_code(errc::colour);
 					}
 				}
 			}
@@ -403,12 +405,12 @@ namespace meen_hw::i8080_arcade
 				}
 				else
 				{
-					err = meen_hw::make_error_code(errc::orientation);
+					err = make_error_code(errc::orientation);
 				}
 			}
 			else
 			{
-				//todo: log unknown option
+				err = make_error_code(errc::json_parse);
 			}
 		}
 
