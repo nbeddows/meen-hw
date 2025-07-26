@@ -73,9 +73,10 @@ jobs:
         # Only generating the documentation for Linux x86_64 (Arm Linux GitHub runner runs into an issue with Doxygen, Windows has deeper issues ...)
         if: github.ref_type == 'tag' && runner.os == 'Linux' && matrix.arch == 'x86_64'
         run: |
-          sudo apt-get install texlive-latex-base
-          sudo apt-get install --fix-missing texlive-latex-extra
-          sudo apt-get install texlive-font-utils
+          ${{ matrix.pm }} update
+          ${{ matrix.pm }} install -f -m texlive-latex-base
+          ${{ matrix.pm }} install -f -m texlive-latex-extra
+          ${{ matrix.pm }} install -f -m texlive-font-utils
 
       # Build the project
       - name: Install Conan profiles
