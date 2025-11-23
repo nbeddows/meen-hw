@@ -26,19 +26,24 @@ SOFTWARE.
 #ifdef PICO_BOARD
 	#include <pico/mutex.h>
 	using mh_mutex = mutex_t;
+	// currently not supported, just make it a dupe of mutex_t
+	using mh_unique_lock = mh_mutex;
 
 	#define MH_MUTEX_INIT(m) mutex_init(&m)
 	#define MH_MUTEX_LOCK(m) mutex_enter_blocking(&m)
 	#define MH_MUTEX_TRY_LOCK(m) mutex_try_enter(&m, nullptr)
 	#define MH_MUTEX_UNLOCK(m) mutex_exit(&m)
+	#define MH_UNIQUE_LOCK(m) mh_unique_lock(m)
 #else // use std::mutex
 	#include <mutex>
 	using mh_mutex = std::mutex;
+	using mh_unique_lock = std::unique_lock<mh_mutex>;
 
 	#define MH_MUTEX_INIT(m)
 	#define MH_MUTEX_LOCK(m) m.lock()
 	#define MH_MUTEX_TRY_LOCK(m) m.try_lock()
 	#define MH_MUTEX_UNLOCK(m) m.unlock()
+	#define MH_UNIQUE_LOCK(m) mh_unique_lock(m)
 #endif // PICO_BOARD
 
 namespace meen_hw
@@ -96,6 +101,17 @@ namespace meen_hw
 		void unlock()
 		{
 			MH_MUTEX_UNLOCK(mtx_);
+		}
+
+		/**	Create a lock that owns the private mutex
+
+			General purpose mutex ownership wrapper.
+
+			@remark		required by condition variable.
+		*/
+		mh_unique_lock unique_lock()
+		{
+			return MH_UNIQUE_LOCK(mtx_);
 		}
 	};
 
