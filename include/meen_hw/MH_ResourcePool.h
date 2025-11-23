@@ -27,6 +27,7 @@ SOFTWARE.
 #include <memory>
 #include <list>
 
+#include "meen_hw/MH_ConditionVariable.h"
 #include "meen_hw/MH_Mutex.h"
 
 namespace meen_hw
@@ -57,6 +58,14 @@ namespace meen_hw
         */
         mutable std::shared_ptr<MH_Mutex> resourceMutex_;
 
+        /** Resource pool condition variable
+
+            The calling application may need to block on one thread while another condition is satisified in another thread.
+
+            @remark Used in the Wait method to block on the resourcePool size reaching the resourceCount parameter passed to the Wait method
+        */
+        std::shared_ptr<MH_ConditionVariable> conditionVariable_;
+
         /** Resource pool
         
             A pool of resources.
@@ -66,6 +75,12 @@ namespace meen_hw
             @remark     Marked as mutable so GetResource can remain const.
         */
         mutable std::shared_ptr<std::list<std::unique_ptr<T, D>>> resourcePool_;
+
+        /** Total resource count
+        
+            The total number of resources that haven been added via the AddResource method.
+        */
+        int resourceCount_{};
 
         /** Custom resource deleter
         
@@ -87,7 +102,7 @@ namespace meen_hw
             
             /** resourceMutex_
             
-                A weak pointer to  MH_ResourcePool::resourceMutex that can be used
+                A weak pointer to MH_ResourcePool::resourceMutex that can be used
                 to check if the resource mutex is still alive. When it is alive it will be
                 used to ensure mutual exculsion between the thread that this deleter was
                 invoked from and the thread on which this resource pool is running,
@@ -96,6 +111,16 @@ namespace meen_hw
                 @see    MH_ResourcePool::resourceMutex_
             */
             std::weak_ptr<MH_Mutex> resourceMutex_;
+
+            /** conditionVariable_
+            
+                A weak pointer to the MH_ResourcePool::conditionVariable that can be used
+                to check if the resource condition variable is still alive. When it is alive
+                it will call its notify_one method allowing the Wait method to re-acquire
+                the resource mutex and check it's condition, otherwise it will it no be
+                accessed.
+            */
+            std::weak_ptr<MH_ConditionVariable> conditionVariable_;
 
             /** Resource deleter
             
@@ -118,9 +143,10 @@ namespace meen_hw
                 @param      resourcePool       The resource pool that destructed resources will be returned to.
                 @param      resourceMutex      The resource pool mutex that will be used for mutual exclusion.
             */
-            ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T, D>>>& resourcePool, const std::shared_ptr<MH_Mutex>& resourceMutex)
-                : resourcePool_(resourcePool)
-                , resourceMutex_{resourceMutex}
+            ResourceDeleter(const std::shared_ptr<std::list<std::unique_ptr<T, D>>>& resourcePool, const std::shared_ptr<MH_Mutex>& resourceMutex, const std::shared_ptr<MH_ConditionVariable>& conditionVariable)
+                : resourcePool_{ resourcePool }
+                , resourceMutex_{ resourceMutex }
+                , conditionVariable_{ conditionVariable }
             {
 
             }
@@ -129,7 +155,7 @@ namespace meen_hw
             
                 A deleter used to recycle resources.
 
-                @param      resource            The resource to recycle/destruct
+                @param      resource        The resource to recycle/destruct
             */
             void operator()(T* resource)
             {
@@ -146,6 +172,13 @@ namespace meen_hw
                     {
                         assert(resourceMutex != nullptr);
                         resourcePool->emplace_back(std::unique_ptr<T, D>{resource});
+                    }
+
+                    auto conditionVariable = conditionVariable_.lock();
+
+                    if (conditionVariable)
+                    {
+                        conditionVariable->notify_one();
                     }
                 }
                 else
@@ -173,20 +206,9 @@ namespace meen_hw
         */
         explicit MH_ResourcePool()
         {
+            conditionVariable_ = std::make_shared<MH_ConditionVariable>();
             resourceMutex_ = std::make_shared<MH_Mutex>();
             resourcePool_ = std::make_shared<std::list<std::unique_ptr<T, D>>>();
-        }
-
-        /** Populate the resource pool
-        
-            Add an item to the resource pool.
-
-            @param  resource    The resource to be added.
-        */
-        void AddResource(T* resource)
-        {
-            MH_LockGuard lg(*resourceMutex_);
-            resourcePool_->emplace_back(std::unique_ptr<T, D>{resource});
         }
 
         /** Destructor
@@ -194,6 +216,51 @@ namespace meen_hw
             Free the resource pool
         */
         ~MH_ResourcePool() = default;
+
+        /** Wait for the resource pool to return to the specified size
+        
+            @param      resourceCount       The size the resource pool must reach before this method returns.
+
+            @remark     This is a blocking function and will cause a deadlock if only called from the same thread from which resources are being added and returned
+                        to the resource pool.
+        */
+        std::error_code Wait(int resourceCount)
+        {
+            auto ul = resourceMutex_->unique_lock();
+            
+            if (resourceCount < 0)
+            {
+                return std::make_error_code(std::errc::invalid_argument);
+            }
+
+            conditionVariable_->wait(ul, [&]{ return resourcePool_->size() == resourceCount; });
+            return std::error_code{};
+        }
+
+        int GetSize() const
+        {
+            MH_LockGuard lg(*resourceMutex_);
+            return resourceCount_;
+        }
+
+        /** Populate the resource pool
+        
+            Add an item to the resource pool.
+
+            @param  resource    The resource to be added.
+
+            @remark             Performs a notify on the condition variable as we could be in a waiting state.
+        */
+        void AddResource(T* resource)
+        {
+            {
+                MH_LockGuard lg(*resourceMutex_);
+                resourcePool_->emplace_back(std::unique_ptr<T, D>{resource});
+                resourceCount_++;
+            }
+
+            conditionVariable_->notify_one();
+        }
 
         /** Get a resource from the resource pool
 
@@ -203,7 +270,7 @@ namespace meen_hw
         {
             std::unique_ptr<T, D> resource;
 
-            // This method is called from GenerateInterrupt so we don't 
+            // This method is called from GenerateInterrupt so we don't
             // want to block waiting for this mutex as we could stall the cpu,
             // if we don't get it, this resource will be dropped (host is too
             // slow, the machine clock resolution is too high or the function
@@ -219,7 +286,7 @@ namespace meen_hw
                 resourceMutex_->unlock();
             }
 
-            return ResourcePtr{resource.release(), ResourceDeleter{resourcePool_, resourceMutex_}};
+            return ResourcePtr{ resource.release(), ResourceDeleter{resourcePool_, resourceMutex_, conditionVariable_} };
         }
     };
 } // namespace meen_hw
