@@ -49,11 +49,11 @@ namespace meen_hw
 	{
     private:
         /** Resource pool mutex
-        
+
             A resource can be returned to the resource pool from any thread. This is the mutex
             used for mutual exclusion between that thread and the thread that this resource pool
             uses for resource access.
-        
+
             @remark     marked as mutable so GetResource can remain const
         */
         mutable std::shared_ptr<MH_Mutex> resourceMutex_;
@@ -67,7 +67,7 @@ namespace meen_hw
         std::shared_ptr<MH_ConditionVariable> conditionVariable_;
 
         /** Resource pool
-        
+
             A pool of resources.
 
             @remark     A resource is automatically returned to the resource pool when it is destructed.
@@ -83,7 +83,7 @@ namespace meen_hw
         int resourceCount_{};
 
         /** Custom resource deleter
-        
+
             A deleter that is attached to each resource that allows it to be returned to the resource pool
             once it has been destructed.
         */
@@ -91,7 +91,7 @@ namespace meen_hw
         {
         private:
             /** resourcePool_
-            
+
                 A weak pointer to MH_ResourcePool::resourcePool that can be used to check
                 if the resource pool is still alive. When it is alive the destructed frame will
                 be returned to it, otherwise it will be deleted.
@@ -99,9 +99,9 @@ namespace meen_hw
                 @see    MH_ResourcePool::resourcePool_
             */
             std::weak_ptr<std::list<std::unique_ptr<T, D>>> resourcePool_;
-            
+
             /** resourceMutex_
-            
+
                 A weak pointer to MH_ResourcePool::resourceMutex that can be used
                 to check if the resource mutex is still alive. When it is alive it will be
                 used to ensure mutual exculsion between the thread that this deleter was
@@ -123,7 +123,7 @@ namespace meen_hw
             std::weak_ptr<MH_ConditionVariable> conditionVariable_;
 
             /** Resource deleter
-            
+
                 The deleter that will be used to delete resources once the resource pool
                 is no longer required.
             */
@@ -131,7 +131,7 @@ namespace meen_hw
 
         public:
             /** Default constructor
-            
+
                 An empty deleter.
             */
             ResourceDeleter() = default;
@@ -152,7 +152,7 @@ namespace meen_hw
             }
 
             /** Custom deleter
-            
+
                 A deleter used to recycle resources.
 
                 @param      resource        The resource to recycle/destruct
@@ -162,7 +162,7 @@ namespace meen_hw
                 if(auto resourcePool = resourcePool_.lock())
                 {
                     auto resourceMutex = resourceMutex_.lock();
-                    
+
                     if(resourceMutex)
                     {
                         MH_LockGuard lg(*resourceMutex);
@@ -190,7 +190,7 @@ namespace meen_hw
 
     public:
         /** Custom resource unique_ptr with custom deleter attached
-        
+
             A using directive for convenience.
 
             @remark     When this resource is destructed it will be automatically returned to the resource pool.
@@ -218,7 +218,7 @@ namespace meen_hw
         ~MH_ResourcePool() = default;
 
         /** Wait for the resource pool to return to the specified size
-        
+
             @param      resourceCount       The size the resource pool must reach before this method returns.
 
             @remark     This is a blocking function and will cause a deadlock if only called from the same thread from which resources are being added and returned
@@ -227,7 +227,7 @@ namespace meen_hw
         std::error_code Wait(int resourceCount)
         {
             auto ul = resourceMutex_->unique_lock();
-            
+
             if (resourceCount < 0)
             {
                 return std::make_error_code(std::errc::invalid_argument);
@@ -244,7 +244,7 @@ namespace meen_hw
         }
 
         /** Populate the resource pool
-        
+
             Add an item to the resource pool.
 
             @param  resource    The resource to be added.
