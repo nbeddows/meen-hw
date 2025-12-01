@@ -102,7 +102,8 @@ set (${lib_name}_private_include_files
 )
 
 set (${lib_name}_public_include_files
-	${include_dir}/${lib_name}/MH_Error.h
+  ${include_dir}/${lib_name}/MH_ConditionVariable.h
+  ${include_dir}/${lib_name}/MH_Error.h
   ${include_dir}/${lib_name}/MH_Factory.h
   ${include_dir}/${lib_name}/MH_II8080ArcadeIO.h
   ${include_dir}/${lib_name}/MH_Mutex.h
