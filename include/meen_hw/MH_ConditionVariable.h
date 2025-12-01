@@ -25,65 +25,106 @@ SOFTWARE.
 
 #include <functional>
 
+#include "meen_hw/MH_Mutex.h"
+
 #ifdef PICO_BOARD
-	using mh_cv = int;
-	// We have no condition variable on pico, so we just use a spin lock
-	#define MH_CV_WAIT(ul, p) while(p() == false);
-	#define MH_CV_NOTIFY_ONE()
-#else // use std::mutex
-	#include <condition_variable>
-
-	#include "meen_hw/MH_Mutex.h"
-
-	using mh_cv = std::condition_variable;
-
-	#define MH_CV_WAIT(ul, p) cv_.wait(ul, p); // to ignore spurious awakenings: while (!p()) cv_.wait(m);
-	#define MH_CV_NOTIFY_ONE() cv_.notify_one();
+    #include <pico/sync.h>
+#else // use std::condition_variable
+    #include <condition_variable>
 #endif // PICO_BOARD
 
 namespace meen_hw
 {
-	/** Condition Variable wrapper
+#ifdef PICO_BOARD
+    /** Pico Condition Variable implementation
 
-		A class which wraps all the supported condition variable types.
-		The condition variable type (mh_cv) is dependent on the platform being targeted.
-		Supported condition variable types are std::condition_variable and spin lock on pico (no condition variable support ... I don't think).
-	*/
-	class MH_ConditionVariable
-	{
-	private:
-		mh_cv cv_;
-	public:
-		/** Default constructor
+        As of time of writing, the pico sdk (v2.1.1) does not have support for condition variable.
+        This is a basic implementation using mutex and semaphore which implements the required
+        methods of std::condition_variable_any.
+    */
+    class MH_ConditionVariable
+    {
+    private:
+        semaphore_t sem;
+        critical_section_t cs;
+        int waiter_count = 0;
+    public:
+        MH_ConditionVariable()
+        {
+            critical_section_init(&cs);
+            sem_init(&sem, 0, 1);
+        }
 
-			Construct a condition variable whose type is platform dependent.
-		*/
-		MH_ConditionVariable() = default;
+        ~MH_ConditionVariable()
+        {
+            critical_section_deinit(&cs);
+        }
 
-		/** Destructor
+        /** Wait on the condition being satisfied
 
-			Use a default destructor.
-		*/
-		~MH_ConditionVariable() = default;
+            Block the current thread until the condition variable is notified or a spurious wakeup occurs.
 
-		/** Wait on the condition being satisfied
+            @param	mutex		A mutex implementation that satisfies BasicLockable.
+            @param	predicate	A method that is called to detect spurious wakeups.
+        */
+        void wait(MH_Mutex& mutex, std::function<bool()>&& predicate)
+        {
+            while (predicate() == false)
+            {
+                // Count this waiter
+                critical_section_enter_blocking(&cs);
+                waiter_count++;
+                critical_section_exit(&cs);
 
-			Block the current thread until the condition variable is notified or a spurious wakeup occurs.
-		*/
-		void wait(mh_unique_lock& lock, std::function<bool()>&& predicate)
-		{
-			MH_CV_WAIT(lock, predicate);
-		}
+                mutex.unlock();
+                // Block until signaled
+                sem_acquire_blocking(&sem);
+                // Reacquire mutex before checking predicate
+                mutex.lock();
+            }
+        }
 
-		/** Unblock one waiting thread
+        /** Unblock one waiting thread
 
-			If any threads are waiting on *this, calling notify_one unblocks one of the waiting threads.
-		*/
-		void notify_one()
-		{
-			return MH_CV_NOTIFY_ONE();
-		}
-	};
+            If any threads are waiting on *this, calling notify_one unblocks one of the waiting threads.
+        */
+        void notify_one()
+        {
+            critical_section_enter_blocking(&cs);
+
+            if (waiter_count > 0)
+            {
+                waiter_count--;
+                sem_release(&sem);
+            }
+
+            critical_section_exit(&cs);
+        }
+
+        /** Unblocks all waiting threads
+
+            If any threads are waiting on *this, calling notify_all unblocks all of the waiting threads.
+        */
+        void notify_all()
+        {
+            critical_section_enter_blocking(&cs);
+
+            while (waiter_count > 0)
+            {
+                waiter_count--;
+                sem_release(&sem);
+            }
+
+            critical_section_exit(&cs);
+        }
+    };
+#else
+    /** Default platform case for condition variable
+
+        The default implementation will be std::condition_variable_any.
+    */
+    using MH_ConditionVariable = std::condition_variable_any;
+#endif // PICO_BOARD
 } // namespace meen_hw
 
 #endif // MEEN_HW_MH_CONDITIONVARIABLE_H
