@@ -77,7 +77,7 @@ namespace meen_hw
         mutable std::shared_ptr<std::list<std::unique_ptr<T, D>>> resourcePool_;
 
         /** Total resource count
-        
+
             The total number of resources that haven been added via the AddResource method.
         */
         int resourceCount_{};
@@ -113,7 +113,7 @@ namespace meen_hw
             std::weak_ptr<MH_Mutex> resourceMutex_;
 
             /** conditionVariable_
-            
+
                 A weak pointer to the MH_ResourcePool::conditionVariable that can be used
                 to check if the resource condition variable is still alive. When it is alive
                 it will call its notify_one method allowing the Wait method to re-acquire
@@ -220,27 +220,57 @@ namespace meen_hw
         /** Wait for the resource pool to return to the specified size
 
             @param      resourceCount       The size the resource pool must reach before this method returns.
+            @param      onWaitComplete      A user defined callback which is invoked under the resource pool lock
+                                            when the resource pool size reaches the value defined in the parameter
+                                            resourceCount.
 
             @remark     This is a blocking function and will cause a deadlock if only called from the same thread from which resources are being added and returned
                         to the resource pool.
         */
-        std::error_code Wait(int resourceCount)
+        std::error_code Wait(int resourceCount, std::function<void()>&& onWaitComplete)
         {
-            auto ul = resourceMutex_->unique_lock();
-
             if (resourceCount < 0)
             {
                 return std::make_error_code(std::errc::invalid_argument);
             }
 
-            conditionVariable_->wait(ul, [&]{ return resourcePool_->size() == resourceCount; });
+            MH_LockGuard lg(*resourceMutex_);
+
+            conditionVariable_->wait(*resourceMutex_, [&]
+            {
+                return resourcePool_->size() == resourceCount;
+            });
+
+            if (onWaitComplete != nullptr)
+            {
+                onWaitComplete();
+            }
+
             return std::error_code{};
         }
 
+        /** Total resource pool elements
+
+            @return The number of resources that have been added to the resource pool via AddResource.
+
+            @remark This is NOT to be confused with the current number of elements residing in the resource pool.
+        */
         int GetSize() const
         {
             MH_LockGuard lg(*resourceMutex_);
             return resourceCount_;
+        }
+
+        /** Current element count
+
+            @return The number of elements currently residing in the resource pool.
+
+            @remark This is NOT to be confused with the total number of elements added via AddResource.
+        */
+        int GetAvailable() const // Change name to GetAvailale if we require this method
+        {
+            MH_LockGuard lg(*resourceMutex_);
+            return resourcePool_->size();
         }
 
         /** Populate the resource pool
