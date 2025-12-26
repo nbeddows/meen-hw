@@ -87,6 +87,10 @@ namespace meen_hw
 		}
 	};
 #else
+    /** Default platform case for recursive mutex
+
+        The default implementation will be std::recursive_mutex.
+    */
 	using MH_Mutex = std::recursive_mutex;
 #endif // PICO_BOARD
 
@@ -113,6 +117,12 @@ namespace meen_hw
 			mtx_.lock();
 		}
 
+		/** Copy constructor
+
+			This constructor is deleted.
+		*/
+		MH_LockGuard(const MH_LockGuard&) = delete;
+
 		/** Destructor
 
 			Unlock the mutex assigned in the constructor.
@@ -121,12 +131,6 @@ namespace meen_hw
 		{
 			mtx_.unlock();
 		}
-
-		/** Copy constructor
-
-			This constructor is deleted.
-		*/
-		MH_LockGuard(const MH_LockGuard&) = delete;
 
 		/** Assignment operator
 
