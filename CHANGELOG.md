@@ -1,3 +1,4 @@
+0.5.0 [26/12/25]
 * Added MH_ResourcePool::Wait method.
 * Added MH_ResourcePool::GetSize method.
 * Added MH_ResourcePool::GetAvailable method.

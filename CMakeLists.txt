@@ -24,7 +24,7 @@ set(resource_dir resource)
 set(source_dir source)
 set(lib_name meen_hw)
 set(major 0)
-set(minor 4)
+set(minor 5)
 set(bugfix 0)
 
 if(NOT ${enable_board} STREQUAL "none")
