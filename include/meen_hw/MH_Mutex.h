@@ -25,34 +25,22 @@ SOFTWARE.
 
 #ifdef PICO_BOARD
 	#include <pico/mutex.h>
-	using mh_mutex = mutex_t;
-
-	#define MH_MUTEX_INIT(m) mutex_init(&m)
-	#define MH_MUTEX_LOCK(m) mutex_enter_blocking(&m)
-	#define MH_MUTEX_TRY_LOCK(m) mutex_try_enter(&m, nullptr)
-	#define MH_MUTEX_UNLOCK(m) mutex_exit(&m)
 #else // use std::mutex
 	#include <mutex>
-	using mh_mutex = std::mutex;
-
-	#define MH_MUTEX_INIT(m)
-	#define MH_MUTEX_LOCK(m) m.lock()
-	#define MH_MUTEX_TRY_LOCK(m) m.try_lock()
-	#define MH_MUTEX_UNLOCK(m) m.unlock()
 #endif // PICO_BOARD
 
 namespace meen_hw
 {
-	/** Mutex wrapper
+#ifdef PICO_BOARD
+	/** Pico recursive mutex wrapper
 
-		A class which wraps all the supported mutex types.
-		The mutex type (mh_mutex) is dependent on the platform being targeted.
-		Supported mutex types are std::mutex and pico mutex.
+		This is a simple wrapper around pico recursive mutex which adheres to basic lockable
+		and whose methods align with std::recursive_mutex
 	*/
 	class MH_Mutex
 	{
 	private:
-		mh_mutex mtx_;
+		recursive_mutex_t mtx_;
 	public:
 		/** Default constructor
 
@@ -60,7 +48,7 @@ namespace meen_hw
 		*/
 		MH_Mutex()
 		{
-			MH_MUTEX_INIT(mtx_);
+			recursive_mutex_init(&mtx_);
 		}
 
 		/** Destructor
@@ -73,9 +61,9 @@ namespace meen_hw
 
 			This will block until the mutex is acquired.
 		*/
-		void lock()
+		inline void lock()
 		{
-			MH_MUTEX_LOCK(mtx_);
+			recursive_mutex_enter_blocking(&mtx_);
 		}
 
 		/** Acquire the mutex
@@ -84,20 +72,27 @@ namespace meen_hw
 
 			@return		True if the mutex was acquired, false otherwise.
 		*/
-		bool try_lock()
+		inline bool try_lock()
 		{
-			return MH_MUTEX_TRY_LOCK(mtx_);
+			return recursive_mutex_try_enter(&mtx_, nullptr);
 		}
 
 		/** Release the mutex
 
 			Allow other threads a change to acquire this mutex.
 		*/
-		void unlock()
+		inline void unlock()
 		{
-			MH_MUTEX_UNLOCK(mtx_);
+			recursive_mutex_exit(&mtx_);
 		}
 	};
+#else
+    /** Default platform case for recursive mutex
+
+        The default implementation will be std::recursive_mutex.
+    */
+	using MH_Mutex = std::recursive_mutex;
+#endif // PICO_BOARD
 
 	/** A simple lock guard implementation
 
@@ -122,6 +117,12 @@ namespace meen_hw
 			mtx_.lock();
 		}
 
+		/** Copy constructor
+
+			This constructor is deleted.
+		*/
+		MH_LockGuard(const MH_LockGuard&) = delete;
+
 		/** Destructor
 
 			Unlock the mutex assigned in the constructor.
@@ -130,12 +131,6 @@ namespace meen_hw
 		{
 			mtx_.unlock();
 		}
-
-		/** Copy constructor
-
-			This constructor is deleted.
-		*/
-		MH_LockGuard(const MH_LockGuard&) = delete;
 
 		/** Assignment operator
 

@@ -1,3 +1,10 @@
+0.5.0 [26/12/25]
+* Added MH_ResourcePool::Wait method.
+* Added MH_ResourcePool::GetSize method.
+* Added MH_ResourcePool::GetAvailable method.
+* Added MH_ConditionVariable which wraps supported
+  platform implementations.
+
 0.4.0 [26/07/25]
 * Added testing and release workflows for GitHub Actions CI/CD.
 * Dropped GCC-12 support.
