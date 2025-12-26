@@ -204,7 +204,7 @@ namespace meen_hw
             @remark     The resource pool will be empty upon construction, call AddResource to populate
                         the resource pool.
         */
-        explicit MH_ResourcePool()
+        MH_ResourcePool()
         {
             conditionVariable_ = std::make_shared<MH_ConditionVariable>();
             resourceMutex_ = std::make_shared<MH_Mutex>();
@@ -267,7 +267,7 @@ namespace meen_hw
 
             @remark This is NOT to be confused with the total number of elements added via AddResource.
         */
-        int GetAvailable() const // Change name to GetAvailale if we require this method
+        int GetAvailable() const
         {
             MH_LockGuard lg(*resourceMutex_);
             return resourcePool_->size();
