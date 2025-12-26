@@ -45,19 +45,41 @@ namespace meen_hw
     class MH_ConditionVariable
     {
     private:
-        semaphore_t sem;
-        critical_section_t cs;
-        int waiter_count = 0;
+        /** Semaphore
+        
+            Constrain access to this resource.
+        */
+        semaphore_t sem_{};
+
+        /** Critical section
+        
+            Used to protect the waiterCount
+        */
+        critical_section_t cs_{};
+
+        /** Resource wait count
+        
+            The number of threads waiting on this resource.
+        */
+        int waiterCount_{};
     public:
+        /** Default constructor
+        
+            Initialise the critical section and the semaphore.
+        */
         MH_ConditionVariable()
         {
-            critical_section_init(&cs);
-            sem_init(&sem, 0, 1);
+            critical_section_init(&cs_);
+            sem_init(&sem_, 0, 1);
         }
 
+        /** Destructor
+
+            Release the resources used by the critical section and the semaphore.
+        */
         ~MH_ConditionVariable()
         {
-            critical_section_deinit(&cs);
+            critical_section_deinit(&cs_);
         }
 
         /** Wait on the condition being satisfied
@@ -72,13 +94,13 @@ namespace meen_hw
             while (predicate() == false)
             {
                 // Count this waiter
-                critical_section_enter_blocking(&cs);
-                waiter_count++;
-                critical_section_exit(&cs);
+                critical_section_enter_blocking(&cs_);
+                waiterCount_++;
+                critical_section_exit(&cs_);
 
                 mutex.unlock();
                 // Block until signaled
-                sem_acquire_blocking(&sem);
+                sem_acquire_blocking(&sem_);
                 // Reacquire mutex before checking predicate
                 mutex.lock();
             }
@@ -90,15 +112,15 @@ namespace meen_hw
         */
         void notify_one()
         {
-            critical_section_enter_blocking(&cs);
+            critical_section_enter_blocking(&cs_);
 
-            if (waiter_count > 0)
+            if (waiterCount_ > 0)
             {
-                waiter_count--;
-                sem_release(&sem);
+                waiterCount_--;
+                sem_release(&sem_);
             }
 
-            critical_section_exit(&cs);
+            critical_section_exit(&cs_);
         }
 
         /** Unblocks all waiting threads
@@ -107,15 +129,15 @@ namespace meen_hw
         */
         void notify_all()
         {
-            critical_section_enter_blocking(&cs);
+            critical_section_enter_blocking(&cs_);
 
-            while (waiter_count > 0)
+            while (waiterCount_ > 0)
             {
-                waiter_count--;
-                sem_release(&sem);
+                waiterCount_--;
+                sem_release(&sem_);
             }
 
-            critical_section_exit(&cs);
+            critical_section_exit(&cs_);
         }
     };
 #else
