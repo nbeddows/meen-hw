@@ -266,7 +266,12 @@ namespace meen_hw::tests
 	TEST_F(MeenHwTest, BlitVRAM)
 	{
 		std::vector<uint8_t> srcVRAM(7168); // 7168 - width * height @ 1bpp
+// Not supporting 32bit blit tests on baremetal platforms
+#ifdef BAREMETAL
 		std::vector<uint8_t> expectedVRAM(114688); // 114688 - width * height @ 16pp
+#else
+		std::vector<uint8_t> expectedVRAM(229376); // 229376 - width * height @ 32pp
+#endif // BAREMETAL
 
 		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, int width, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
@@ -333,7 +338,7 @@ namespace meen_hw::tests
 		// 8 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 57344), 224, 1, 16, 0, "{\"bpp\":8,\"orientation\":\"upright\"}");
 
-		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end(); std::advance(data, 1024))
+		for (auto data = expectedVRAM.begin(); data < expectedVRAM.begin() + 114688; std::advance(data, 1024))
 		{
 			// 512 - 16bpp uncompressed row bytes
 			std::ranges::fill_n(data, 512, 0x00);
@@ -341,19 +346,39 @@ namespace meen_hw::tests
 		}
 
 		// Native orientation 16pp blit without padding
-		checkVRAM(std::span(srcVRAM), 256, std::span(expectedVRAM), 256, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), 256, std::span(expectedVRAM.begin(), 114688), 256, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"cocktail\"}");
 		// Native orientation 16pp blit with padding
-		checkVRAM(std::span(srcVRAM), 256, std::span(expectedVRAM), 256, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"cocktail\"}");
+		checkVRAM(std::span(srcVRAM), 256, std::span(expectedVRAM.begin(), 114688), 256, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"cocktail\"}");
 
 		std::ranges::fill_n(std::bit_cast<uint32_t*>(expectedVRAM.data()), 28672, 0xFFFF0000);
 
 		// 16 bpp blit with upright orientation without padding
-		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 114688), 224, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
 		// 16 bpp blit with upright orientation with padding
-		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
+		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 114688), 224, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
+// Only perform the 32 bit blit tests on non baremetal platforms due to memory requirements
+#ifndef BAREMETAL
+		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end(); std::advance(data, 2048))
+		{
+			// 1024 - 32bpp uncompressed row bytes
+			std::ranges::fill_n(data, 1024, 0x00);
+			std::ranges::fill_n(data + 1024, 1024, 0xFF);
+		}
+
+		// Native orientation 32pp blit without padding
+		checkVRAM(std::span(srcVRAM), 256, std::span(expectedVRAM), 256, 4, 0, 0, "{\"bpp\":32,\"orientation\":\"cocktail\"}");
+		// Native orientation 32pp blit with padding
+		checkVRAM(std::span(srcVRAM), 256, std::span(expectedVRAM), 256, 4, 16, 0, "{\"bpp\":32,\"orientation\":\"cocktail\"}");
+
+		std::ranges::fill_n(std::bit_cast<uint64_t*>(expectedVRAM.data()), 28672, 0xFFFFFFFF00000000);
+
+		// 32 bpp blit with upright orientation without padding
+		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 4, 0, 0, "{\"bpp\":32,\"orientation\":\"upright\"}");
+		// 32 bpp blit with upright orientation with padding
+		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 4, 16, 0, "{\"bpp\":32,\"orientation\":\"upright\"}");
+#endif // BAREMETAL
 	}
 #endif
-
 } // namespace meen_hw::tests
 
 int main(int argc, char** argv)
