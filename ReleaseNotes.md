@@ -2,7 +2,6 @@
 
 **Highlights:**
 
-- Added MH_ResourcePool::Wait method.
-- Added MH_ConditionVariable header.
+- 32bit blit support.
 
 See the CHANGELOG for a complete list.
