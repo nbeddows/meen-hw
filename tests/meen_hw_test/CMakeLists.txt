@@ -44,6 +44,8 @@ target_link_libraries(${exe_name} PRIVATE ${${exe_name}_deps} ${lib_name})
 install(TARGETS ${exe_name} RUNTIME)
 
 if(${build_os} STREQUAL "baremetal")
+  target_compile_definitions(${exe_name} PRIVATE BAREMETAL)
+  
   if(NOT ${enable_board} STREQUAL "none")
     pico_enable_stdio_usb(${exe_name} 1)
     pico_enable_stdio_uart(${exe_name} 0)
