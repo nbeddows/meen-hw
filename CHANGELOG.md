@@ -1,3 +1,8 @@
+0.6.0
+* Added blit flags `bpp32` and `Upright32bpp` for
+  32bit blit support.
+* Visual Studio 2026 support.
+
 0.5.0 [26/12/25]
 * Added MH_ResourcePool::Wait method.
 * Added MH_ResourcePool::GetSize method.
