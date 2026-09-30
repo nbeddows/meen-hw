@@ -266,12 +266,7 @@ namespace meen_hw::tests
 	TEST_F(MeenHwTest, BlitVRAM)
 	{
 		std::vector<uint8_t> srcVRAM(7168); // 7168 - width * height @ 1bpp
-// Not supporting 32bit blit tests on baremetal platforms
-#ifdef BAREMETAL
-		std::vector<uint8_t> expectedVRAM(114688); // 114688 - width * height @ 16pp
-#else
 		std::vector<uint8_t> expectedVRAM(229376); // 229376 - width * height @ 32pp
-#endif // BAREMETAL
 
 		auto checkVRAM = [this](std::span<uint8_t> VRAMToBlit, int width, std::span<uint8_t> expectedVRAM, int expectedWidth, int bpp, int padding, int compressed, const char* options)
 		{
@@ -356,8 +351,7 @@ namespace meen_hw::tests
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 114688), 224, 2, 0, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
 		// 16 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM.begin(), 114688), 224, 2, 16, 0, "{\"bpp\":16,\"orientation\":\"upright\"}");
-// Only perform the 32 bit blit tests on non baremetal platforms due to memory requirements
-#ifndef BAREMETAL
+
 		for (auto data = expectedVRAM.begin(); data < expectedVRAM.end(); std::advance(data, 2048))
 		{
 			// 1024 - 32bpp uncompressed row bytes
@@ -376,7 +370,6 @@ namespace meen_hw::tests
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 4, 0, 0, "{\"bpp\":32,\"orientation\":\"upright\"}");
 		// 32 bpp blit with upright orientation with padding
 		checkVRAM(std::span(srcVRAM), 224, std::span(expectedVRAM), 224, 4, 16, 0, "{\"bpp\":32,\"orientation\":\"upright\"}");
-#endif // BAREMETAL
 	}
 #endif
 } // namespace meen_hw::tests
