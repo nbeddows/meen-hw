@@ -1,4 +1,4 @@
-## MEEN HardWare 0.5.0
+## MEEN HardWare 0.6.0
 
 **Highlights:**
 
