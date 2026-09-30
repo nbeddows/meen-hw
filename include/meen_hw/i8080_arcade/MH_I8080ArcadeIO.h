@@ -45,9 +45,11 @@ namespace meen_hw::i8080_arcade
 			Native			= 0 << 0,				/**< Native pixel format (1bpp) and resolution (256 x 224). */
 			bpp8			= 1 << 0,				/**< 8 bits per pixel with native resolution. */
 			bpp16			= 1 << 1,				/**< 16 bits per pixel with native resolution. */
-			Upright			= 1 << 2,				/**< Native pixel format with a resolution of 224 x 256. */
+			bpp32			= 1 << 2,				/**< 32 bits per pixel with native resolution. */
+			Upright			= 1 << 3,				/**< Native pixel format with a resolution of 224 x 256. */
 			Upright8bpp 	= Upright | bpp8,		/**< 8 bits per pixel with a resolution of 224 x 256. */
-			Upright16bpp	= Upright | bpp16		/**< 16 bits per pixel with a resolution of 224 X 256. */
+			Upright16bpp	= Upright | bpp16,		/**< 16 bits per pixel with a resolution of 224 x 256. */
+			Upright32bpp	= Upright | bpp32		/**< 32 bits per pixel with a resolution of 224 x 256. */
 		};
 
 		/** The next interrupt to execute
@@ -114,12 +116,11 @@ namespace meen_hw::i8080_arcade
 			property in the config.json.
 
 			@remark	The background colour is always black.
-			@remark	This value is ignored when blitMode_ does not have BlitFlags::Rgb332 set.
 		
 			@see blitMode_
 			@see BlitFlags
 		*/
-		uint16_t colour_{ 0xFFFF };
+		uint32_t colour_{ 0xFFFFFFFF };
 
 	public:
 		/** Read from the specified port

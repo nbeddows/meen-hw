@@ -269,6 +269,11 @@ namespace meen_hw::i8080_arcade
 				decompressVram.template operator()<uint16_t, true>();
 				break;
 			}
+			case BlitFlags::bpp32:
+			{
+				decompressVram.template operator()<uint32_t, true>();
+				break;
+			}
 			case BlitFlags::Upright8bpp:
 			{
 				decompressVram.template operator()<uint8_t, false>();
@@ -279,10 +284,22 @@ namespace meen_hw::i8080_arcade
 				decompressVram.template operator()<uint16_t, false>();
 				break;
 			}
+			case BlitFlags::Upright32bpp:
+			{
+				decompressVram.template operator()<uint32_t, false>();
+				break;
+			}
 			default:
 			{
 				// todo: log invalid blit mode
-				assert(blitMode_ == BlitFlags::Upright || blitMode_ == BlitFlags::Native || blitMode_ == BlitFlags::bpp8 || blitMode_ == BlitFlags::bpp16 || blitMode_ == BlitFlags::Upright8bpp || blitMode_ == BlitFlags::Upright16bpp);
+				assert(blitMode_ == BlitFlags::Upright ||
+						blitMode_ == BlitFlags::Native ||
+						blitMode_ == BlitFlags::bpp8 ||
+						blitMode_ == BlitFlags::bpp16 ||
+						blitMode_ == BlitFlags::bpp32 ||
+						blitMode_ == BlitFlags::Upright8bpp ||
+						blitMode_ == BlitFlags::Upright16bpp ||
+						blitMode_ == BlitFlags::Upright32bpp);
 			}
 		}
 	}
@@ -327,18 +344,28 @@ namespace meen_hw::i8080_arcade
 					{
 						blitMode_ &= ~BlitFlags::bpp8;
 						blitMode_ &= ~BlitFlags::bpp16;
+						blitMode_ &= ~BlitFlags::bpp32;
 						break;
 					}
 					case 8:
 					{
 						blitMode_ |= BlitFlags::bpp8;
 						blitMode_ &= ~BlitFlags::bpp16;
+						blitMode_ &= ~BlitFlags::bpp32;
 						break;
 					}
 					case 16:
 					{
 						blitMode_ &= ~BlitFlags::bpp8;
 						blitMode_ |= BlitFlags::bpp16;
+						blitMode_ &= ~BlitFlags::bpp32;
+						break;
+					}
+					case 32:
+					{
+						blitMode_ &= ~BlitFlags::bpp8;
+						blitMode_ &= ~BlitFlags::bpp16;
+						blitMode_ |= BlitFlags::bpp32;
 						break;
 					}
 					default:
@@ -358,24 +385,25 @@ namespace meen_hw::i8080_arcade
 
 				if (colour == "red")
 				{
-					colour_ = 0xF880;
+					colour_ = 0xFF00F880;
 				}
 				else if (colour == "green")
 				{
-					colour_ = 0x07F4;
+					colour_ = 0x00FF07F4;
 				}
 				else if (colour == "blue")
 				{
-					colour_ = 0x0007;
+					colour_ = 0x0000FF07;
 				}
 				else if (colour == "white")
 				{
-					colour_ = 0xFFFF;
+					colour_ = 0xFFFFFFFF;
 				}
 				else if (colour == "random")
 				{
 					srand(time(nullptr));
-					colour_ = rand() % 65535 + rand() % 255;
+					//colour_ = rand() % 65535 + rand() % 255;
+					colour_ = rand() % 0xFFFFFFFF;
 				}
 				else
 				{
