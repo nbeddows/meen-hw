@@ -307,6 +307,7 @@ namespace meen_hw::i8080_arcade
 	std::error_code MH_I8080ArcadeIO::SetOptions(const char* jsonOptions)
 	{
 		auto err = make_error_code(errc::no_error);
+		std::string_view colour;
 #ifdef ENABLE_NLOHMANN_JSON
 		auto options = nlohmann::json::parse(jsonOptions, nullptr, false);
 
@@ -378,42 +379,10 @@ namespace meen_hw::i8080_arcade
 			else if (key == "colour")
 			{
 #ifdef ENABLE_NLOHMANN_JSON
-				auto colour = val.get<std::string_view>();
+				colour = val.get<std::string_view>();
 #else
-				auto colour = kv.value().as<std::string_view>();
+				colour = kv.value().as<std::string_view>();
 #endif
-
-				if (colour == "red")
-				{
-					colour_ = 0xFF00F880;
-				}
-				else if (colour == "green")
-				{
-					colour_ = 0x00FF07F4;
-				}
-				else if (colour == "blue")
-				{
-					colour_ = 0x0000FF07;
-				}
-				else if (colour == "white")
-				{
-					colour_ = 0xFFFFFFFF;
-				}
-				else if (colour == "random")
-				{
-					srand(time(nullptr));
-					//colour_ = rand() % 65535 + rand() % 255;
-					colour_ = rand() % 0xFFFFFFFF;
-				}
-				else
-				{
-					auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
-
-					if (errc != std::errc() || *ptr != '\0')
-					{
-						err = make_error_code(errc::colour);
-					}
-				}
 			}
 			else if(key == "orientation")
 			{
@@ -439,6 +408,93 @@ namespace meen_hw::i8080_arcade
 			else
 			{
 				err = make_error_code(errc::json_parse);
+			}
+		}
+
+		if (!err)
+		{
+			// Colours are set in the following formats:
+			// 
+			// 8pp:   RGB332
+			// 16bpp: RGB565
+			// 32bpp: ARGB8888
+			if (colour.empty() == false)
+			{
+				if (colour == "red")
+				{
+					if (blitMode_ & BlitFlags::bpp8)
+					{
+						colour_ = 0xE0;
+					}
+					if (blitMode_ & BlitFlags::bpp16)
+					{
+						colour_ = 0xF800;
+					}
+					else if (blitMode_ & BlitFlags::bpp32)
+					{
+						colour_ = 0xFFFF0000;
+					}
+				}
+				else if (colour == "green")
+				{
+					if (blitMode_ & BlitFlags::bpp8)
+					{
+						colour_ = 0x1C;
+					}
+					if (blitMode_ & BlitFlags::bpp16)
+					{
+						colour_ = 0x07E0;
+					}
+					else if (blitMode_ & BlitFlags::bpp32)
+					{
+						colour_ = 0xFF00FF00;
+					}
+				}
+				else if (colour == "blue")
+				{
+					if (blitMode_ & BlitFlags::bpp8)
+					{
+						colour_ = 0x03;
+					}
+					if (blitMode_ & BlitFlags::bpp16)
+					{
+						colour_ = 0x001F;
+					}
+					else if (blitMode_ & BlitFlags::bpp32)
+					{
+						colour_ = 0xFF0000FF;
+					}
+				}
+				else if (colour == "white")
+				{
+					colour_ = 0xFFFFFFFF;
+				}
+				else if (colour == "random")
+				{
+					srand(time(nullptr));
+
+					if (blitMode_ & BlitFlags::bpp8)
+					{
+						colour_ = rand() % 0xFF;
+					}
+					if (blitMode_ & BlitFlags::bpp16)
+					{
+						colour_ = rand() % 0xFFFF;
+					}
+					else if (blitMode_ & BlitFlags::bpp32)
+					{
+						colour_ = 0xFF000000 | rand() % 0xFFFFFF;
+					}
+				}
+				else
+				{
+					auto [ptr, errc] = std::from_chars(colour.data(), colour.data() + colour.size(), colour_, 16);
+
+					if (errc != std::errc() || *ptr != '\0')
+					{
+						err = make_error_code(errc::colour);
+					}
+				}
 			}
 		}
 
